@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "packages", "packages", "{970B2E05-CCD0-4A9B-972E-3970EEDB1E9F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Limaj.Framework.Abstractions", "packages\Limaj.Framework.Abstractions\Limaj.Framework.Abstractions.csproj", "{6787F912-61E6-4610-AB6B-31E792B6A711}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Limaj.Framework.Application", "packages\Limaj.Framework.Application\Limaj.Framework.Application.csproj", "{B41452C7-C4C4-4A2E-A5AD-1ED8176729E3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Limaj.Framework.Functions", "packages\Limaj.Framework.Functions\Limaj.Framework.Functions.csproj", "{518FD9FD-2A3F-4035-A7F4-BDD3516983A9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Limaj.Framework.Persistence.EFCore", "packages\Limaj.Framework.Persistence.EFCore\Limaj.Framework.Persistence.EFCore.csproj", "{881CA68D-8540-4EC0-9743-3C0D701E1A1C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6787F912-61E6-4610-AB6B-31E792B6A711}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6787F912-61E6-4610-AB6B-31E792B6A711}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6787F912-61E6-4610-AB6B-31E792B6A711}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6787F912-61E6-4610-AB6B-31E792B6A711}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B41452C7-C4C4-4A2E-A5AD-1ED8176729E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B41452C7-C4C4-4A2E-A5AD-1ED8176729E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B41452C7-C4C4-4A2E-A5AD-1ED8176729E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B41452C7-C4C4-4A2E-A5AD-1ED8176729E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{518FD9FD-2A3F-4035-A7F4-BDD3516983A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{518FD9FD-2A3F-4035-A7F4-BDD3516983A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{518FD9FD-2A3F-4035-A7F4-BDD3516983A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{518FD9FD-2A3F-4035-A7F4-BDD3516983A9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{881CA68D-8540-4EC0-9743-3C0D701E1A1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{881CA68D-8540-4EC0-9743-3C0D701E1A1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{881CA68D-8540-4EC0-9743-3C0D701E1A1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{881CA68D-8540-4EC0-9743-3C0D701E1A1C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{6787F912-61E6-4610-AB6B-31E792B6A711} = {970B2E05-CCD0-4A9B-972E-3970EEDB1E9F}
+		{B41452C7-C4C4-4A2E-A5AD-1ED8176729E3} = {970B2E05-CCD0-4A9B-972E-3970EEDB1E9F}
+		{518FD9FD-2A3F-4035-A7F4-BDD3516983A9} = {970B2E05-CCD0-4A9B-972E-3970EEDB1E9F}
+		{881CA68D-8540-4EC0-9743-3C0D701E1A1C} = {970B2E05-CCD0-4A9B-972E-3970EEDB1E9F}
+	EndGlobalSection
+EndGlobal

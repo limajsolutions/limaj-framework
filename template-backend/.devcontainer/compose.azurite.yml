@@ -1,0 +1,24 @@
+# Fragmento STORAGE — Azurite (emulador de Azure Blob/Queue/Table). Opcional.
+# Inclua só se o backend usa storage Azure (ex.: Functions com Timer/Queue trigger,
+# upload de blobs). Combine no devcontainer.json e mantenha USE_AZURITE=true.
+#
+# Acessível por hostname interno `azurite` (portas 10000/10001/10002). Sem `ports:`.
+
+services:
+  app:
+    depends_on:
+      azurite:
+        condition: service_started
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: template-azurite-dev
+    command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --location /data"
+    volumes:
+      - template_azurite_data_dev:/data
+    networks:
+      - template_devnet
+
+volumes:
+  template_azurite_data_dev:
+    name: template_azurite_data_dev

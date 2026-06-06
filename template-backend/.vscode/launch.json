@@ -1,0 +1,24 @@
+{
+  // Debug do backend dentro do Dev Container — ver .devcontainer/README.md (Debug).
+  // Functions: suba `func host start --port 7071` no terminal e use "Attach" (o worker
+  // isolado é um processo dotnet separado). API Kestrel: use a config "Launch API".
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Attach to Functions (pick dotnet)",
+      "type": "coreclr",
+      "request": "attach",
+      "processId": "${command:pickProcess}"
+    },
+    {
+      "name": "Launch API (Kestrel)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      // Ajuste o caminho/TFM ao renomear o template (Template → produto).
+      "program": "${workspaceFolder}/src/Template.Api/bin/Debug/net9.0/Template.Api.dll",
+      "cwd": "${workspaceFolder}/src/Template.Api",
+      "env": { "ASPNETCORE_ENVIRONMENT": "Development" }
+    }
+  ]
+}

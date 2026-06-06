@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Write(template-backend/.claude/commands/*)",
+      "Edit(template-backend/.claude/commands/*)"
+    ]
+  }
+}

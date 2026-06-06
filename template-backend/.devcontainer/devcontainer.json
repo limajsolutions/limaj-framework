@@ -1,0 +1,55 @@
+{
+  // Dev Container isolado para o Claude Code — ver .devcontainer/README.md.
+  // O VS Code entra no serviço `app` do compose; o banco e o storage sobem como
+  // serviços-irmãos na rede interna `template_devnet`, acessíveis por hostname
+  // (nunca via socket Docker do host, que NÃO é montado).
+  //
+  // Ao criar o produto: troque "Template"/"template" pelo nome real aqui, no
+  // docker-compose.yml e nos fragmentos.
+  "name": "Template — Claude isolado",
+
+  // FRAGMENTOS: o base (docker-compose.yml) traz só o `app`. Adicione/remova
+  // fragmentos conforme o stack do produto (ver README.md → "Trocar de stack"):
+  //   - DB:       compose.sqlserver.yml  OU  compose.postgres.yml
+  //   - storage:  compose.azurite.yml    (só se usar Blob/Queue/Table)
+  // A ordem importa: o base primeiro, fragmentos depois (eles fazem merge nele).
+  "dockerComposeFile": [
+    "docker-compose.yml",
+    "compose.sqlserver.yml",
+    "compose.azurite.yml"
+  ],
+  "service": "app",
+  "workspaceFolder": "/workspace",
+
+  // Bootstrap idempotente: restore + (npm ci) + secrets dummy + config local + migrations.
+  // O comportamento é parametrizado pelas envs do serviço `app` (DB_ENGINE,
+  // BACKEND_KIND, USE_AZURITE, USE_FRONTEND) — ver docker-compose.yml e post-create.sh.
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  // Túnel do VS Code (NÃO é `ports:` do compose): expõe ao host o que roda DENTRO
+  // do `app`. 5173 = Vite (frontend), 7071 = Functions, 5000/5001 = API Kestrel.
+  // Remova os que o seu stack não usa.
+  "forwardPorts": [5173, 7071, 5000, 5001],
+  "portsAttributes": {
+    "5173": { "label": "Frontend (Vite)", "onAutoForward": "notify" },
+    "7071": { "label": "Functions (API)", "onAutoForward": "silent" },
+    "5000": { "label": "API (HTTP)", "onAutoForward": "silent" },
+    "5001": { "label": "API (HTTPS)", "onAutoForward": "silent" }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.csharp",
+        "ms-azuretools.vscode-azurefunctions",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "anthropic.claude-code"
+      ]
+    }
+  },
+
+  // O VS Code roda dentro do container como o usuário `vscode` (uid 1000, da imagem base).
+  "remoteUser": "vscode"
+}

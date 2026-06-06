@@ -1,0 +1,34 @@
+# Fragmento DB — PostgreSQL 16. Alternativa a compose.sqlserver.yml (use UM dos dois).
+# No devcontainer.json troque o fragmento e ajuste o build arg do Dockerfile:
+#   INSTALL_MSSQL=false, INSTALL_PSQL=true
+# e a env do serviço app: DB_ENGINE=postgres.
+#
+# Acessível por hostname interno `postgres:5432`. Sem `ports:` (convive com local).
+
+services:
+  app:
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16
+    container_name: template-postgres-dev
+    environment:
+      POSTGRES_USER: "app"
+      POSTGRES_PASSWORD: "Dev_Local_Pass_w0rd!"   # casa com post-create.sh; só dev
+      POSTGRES_DB: "template"
+    volumes:
+      - template_postgres_data_dev:/var/lib/postgresql/data
+    networks:
+      - template_devnet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d template || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  template_postgres_data_dev:
+    name: template_postgres_data_dev

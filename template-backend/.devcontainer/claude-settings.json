@@ -1,0 +1,21 @@
+{
+  "// NOTA": "Allowlist do Claude APENAS para o Dev Container isolado (ver .devcontainer/README.md). O post-create.sh copia este arquivo para ~/.claude/settings.json DENTRO do container. NUNCA mergear no .claude/settings.json versionado do host — esta permissividade só é segura porque o container é descartável, não monta o socket do Docker e não enxerga o host.",
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Bash(dotnet:*)",
+      "Bash(func:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(node:*)",
+      "Bash(git:*)",
+      "Bash(gh:*)",
+      "Bash(sqlcmd:*)",
+      "Bash(psql:*)",
+      "Bash(openssl:*)",
+      "Edit",
+      "Write",
+      "Read"
+    ]
+  }
+}

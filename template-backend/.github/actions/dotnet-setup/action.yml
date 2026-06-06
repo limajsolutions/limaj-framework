@@ -1,0 +1,10 @@
+name: dotnet-setup
+
+description: Setup base do .NET para workflows.
+
+runs:
+  using: composite
+  steps:
+    - name: Placeholder
+      shell: bash
+      run: echo "TODO: configurar setup do .NET."

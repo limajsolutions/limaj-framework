@@ -1,0 +1,42 @@
+# Compose BASE do Dev Container isolado — só o serviço `app` (onde o VS Code entra
+# e o Claude roda). Bancos e storage vêm de FRAGMENTOS opcionais, combinados pelo
+# `dockerComposeFile` do devcontainer.json. Ver .devcontainer/README.md.
+#
+# Convenção de isolamento (convive com um devops/ local sem colidir):
+#   - rede própria `template_devnet`
+#   - container_name com sufixo `-dev`
+#   - volumes com sufixo `_dev` (dados separados do ambiente local)
+#   - SEM `ports:` — acesso do host é via forwardPorts (túnel do VS Code), nunca
+#     por publicação de porta do Docker. É isso que evita "porta já em uso".
+#
+# Ao criar o produto, troque `template` pelo nome real (rede, container, volumes).
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Ajuste ao stack do produto. Ver README.md (seção "Trocar de stack").
+        INSTALL_NODE: "true"     # frontend Vite / tooling npm
+        INSTALL_FUNC: "true"     # Azure Functions Core Tools (BACKEND_KIND=functions)
+        INSTALL_MSSQL: "true"    # sqlcmd (DB_ENGINE=sqlserver)
+        INSTALL_PSQL: "false"    # psql (DB_ENGINE=postgres)
+    container_name: template-app-dev
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+    networks:
+      - template_devnet
+    # post-create.sh lê estas envs para gerar a config certa sem editar o script.
+    environment:
+      DB_ENGINE: "sqlserver"     # sqlserver | postgres | none
+      BACKEND_KIND: "functions"  # functions | api
+      USE_AZURITE: "true"        # storage Azure (Blob/Queue/Table)
+      USE_FRONTEND: "true"       # roda npm ci em web/ no bootstrap
+
+networks:
+  template_devnet:
+    name: template_devnet
+
+# Volumes dos fragmentos de banco são declarados nos próprios fragmentos.
