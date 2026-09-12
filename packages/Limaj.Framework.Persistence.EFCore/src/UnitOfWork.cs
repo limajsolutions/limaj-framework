@@ -10,16 +10,21 @@ public class UnitOfWork<TDbContext>(TDbContext context) : IUnitOfWork
         Func<CancellationToken, Task> action,
         CancellationToken cancellationToken = default)
     {
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-        try
+        var executionStrategy = context.Database.CreateExecutionStrategy();
+
+        await executionStrategy.ExecuteAsync(async () =>
         {
-            await action(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-        }
-        catch
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            throw;
-        }
+            await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                await action(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+        });
     }
 }

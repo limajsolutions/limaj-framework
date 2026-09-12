@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <Compile Remove="Limaj.Framework.Persistence.EFCore.Tests\**\*.cs" />
+    <None Remove="Limaj.Framework.Persistence.EFCore.Tests\**\*.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Limaj.Framework.Abstractions\Limaj.Framework.Abstractions.csproj" />
   </ItemGroup>
   <ItemGroup>
