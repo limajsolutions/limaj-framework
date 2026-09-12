@@ -12,7 +12,8 @@ Base reutilizável para acelerar criação de backends SaaS em .NET/Azure Functi
 - `packages/Limaj.Framework.Application`: camada de aplicação desacoplada de infraestrutura concreta.
 - `packages/Limaj.Framework.Persistence.EFCore`: adapters EF Core que implementam contratos das abstrações.
 - `packages/Limaj.Framework.Functions`: pipeline HTTP genérico para host Functions.
-- `template-backend/`: gabarito para iniciar novos produtos.
+- `template-backend/`: gabarito para iniciar novos produtos — já traz `.claude/commands/`, `docs/epics/{backlog,em-andamento,finalizados}/` e `docs/README.md` prontos.
+- `docs/template-usage.md`: como consumir/evoluir o template, incluindo o ciclo de gestão de epics em `docs/epics/`.
 - `Limaj.Framework.sln`: solução do framework para build/test dos pacotes base.
 
 ## Iniciar um novo SaaS a partir deste gabarito (passo a passo)
@@ -140,20 +141,20 @@ vive só dentro do container; ver [guia do devcontainer](template-backend/.devco
 
 ### 7. Usar os slash commands do Claude
 
-Os comandos já vêm em `.claude/commands/` do produto. No Claude Code:
+Os comandos já vêm em `.claude/commands/` do produto — 6 comandos, cada um com uma
+responsabilidade exclusiva (ver detalhamento no [`CLAUDE.md`](CLAUDE.md#prompt--command-surfaces)):
 
 | Comando | Para quê |
 |---|---|
-| `/arquiteto` | definir arquitetura e gerar a estrutura de projetos/decisões |
-| `/analyst` | análise funcional de uma ideia → rascunho de issue |
-| `/spike` | investigar o código antes de implementar |
-| `/SM` | criar/ler issues no GitHub e gerar prompt de implementação |
-| `/dev` | implementar a partir de um prompt |
-| `/bugfix` | diagnosticar e corrigir bug |
-| `/review` | revisão de código com relatório |
-| `/qa` | testar o frontend via Playwright MCP (se houver `web/`) |
-| `/infra` | manter scripts, devcontainer e tooling |
-| `/flow` | orquestrar o ciclo completo (ideia → commit) delegando aos demais |
+| `/analyst` | regras funcionais de negócio, edge cases e riscos jurídicos/compliance → rascunho de epic |
+| `/arquiteto` | arquitetura, stack, TDD e segurança/DevSecOps — só produz Markdown |
+| `/flow` | media a discussão entre `/arquiteto` e `/analyst` até consenso; formaliza o epic em `docs/epics/` |
+| `/spike` | único agente que altera código de produto — investiga, implementa, corrige bugs e revisa |
+| `/qa` | testa o app (Playwright MCP, se houver `web/`) de forma independente, orientado por epics/docs/código |
+| `/infra` | manter scripts, devcontainer, tooling e o próprio `.claude/` |
+
+A gestão de trabalho é feita em `docs/epics/` (não em um board externo) — ver
+[`docs/template-usage.md`](docs/template-usage.md) para o ciclo completo de um epic.
 
 ### 8. Validar e fazer o primeiro commit
 
