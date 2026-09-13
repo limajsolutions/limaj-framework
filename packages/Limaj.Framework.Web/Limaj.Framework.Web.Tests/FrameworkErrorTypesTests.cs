@@ -1,8 +1,8 @@
 using Limaj.Framework.Abstractions.Errors;
-using Limaj.Framework.Functions.Http;
+using Limaj.Framework.Web.Http;
 using Xunit;
 
-namespace Limaj.Framework.Functions.Tests;
+namespace Limaj.Framework.Web.Tests;
 
 /// <summary>
 /// DA-003 negative test: the framework must only ever expose the extension mechanism
@@ -26,9 +26,9 @@ public class FrameworkErrorTypesTests
     }
 
     [Fact]
-    public void FunctionsAssembly_DefinesNoExceptionTypesOfItsOwn()
+    public void WebAssembly_DefinesNoExceptionTypesOfItsOwn()
     {
-        AssertOnlyKnownExceptionTypes(typeof(FunctionRunner).Assembly);
+        AssertOnlyKnownExceptionTypes(typeof(RequestRunner).Assembly);
     }
 
     private static void AssertOnlyKnownExceptionTypes(System.Reflection.Assembly assembly)

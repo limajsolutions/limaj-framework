@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <Compile Remove="Limaj.Framework.Functions.Tests\**\*.cs" />
-    <None Remove="Limaj.Framework.Functions.Tests\**\*.cs" />
+    <Compile Remove="Limaj.Framework.Web.Tests\**\*.cs" />
+    <None Remove="Limaj.Framework.Web.Tests\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Limaj.Framework.Abstractions\Limaj.Framework.Abstractions.csproj" />

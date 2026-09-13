@@ -2,7 +2,7 @@ using Limaj.Framework.Abstractions.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Limaj.Framework.Functions.Http;
+namespace Limaj.Framework.Web.Http;
 
 public static class ResultExtensions
 {

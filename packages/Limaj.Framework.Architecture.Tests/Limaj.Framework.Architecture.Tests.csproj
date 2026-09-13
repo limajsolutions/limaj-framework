@@ -10,7 +10,7 @@
     <ProjectReference Include="..\Limaj.Framework.Abstractions\Limaj.Framework.Abstractions.csproj" />
     <ProjectReference Include="..\Limaj.Framework.Application\Limaj.Framework.Application.csproj" />
     <ProjectReference Include="..\Limaj.Framework.Persistence.EFCore\Limaj.Framework.Persistence.EFCore.csproj" />
-    <ProjectReference Include="..\Limaj.Framework.Functions\Limaj.Framework.Functions.csproj" />
+    <ProjectReference Include="..\Limaj.Framework.Web\Limaj.Framework.Web.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />

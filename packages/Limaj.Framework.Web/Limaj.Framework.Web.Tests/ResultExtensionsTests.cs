@@ -1,10 +1,10 @@
 using System.Net;
 using Limaj.Framework.Abstractions.Common;
-using Limaj.Framework.Functions.Http;
+using Limaj.Framework.Web.Http;
 using Microsoft.AspNetCore.Http;
 using Xunit;
 
-namespace Limaj.Framework.Functions.Tests;
+namespace Limaj.Framework.Web.Tests;
 
 public class ResultExtensionsTests
 {

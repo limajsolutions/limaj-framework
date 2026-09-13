@@ -1,7 +1,7 @@
 # Renomear Limaj.Framework.Functions para Limaj.Framework.Web
 
-**Status:** Backlog
-**Última revisão:** 2026-09-12
+**Status:** Implementação concluída — pendente de fechamento de negócio pelo usuário
+**Última revisão:** 2026-09-13
 
 ## Contexto
 
@@ -86,46 +86,69 @@ Impacto em outros arquivos do repo (fora de `packages/`, mas parte da mesma entr
 
 ## Estratégia de testes
 
-Não existe hoje nenhum projeto de teste em `Limaj.Framework.sln`. Este epic cria o
-**primeiro** projeto de teste do repositório (`Limaj.Framework.Web.Tests`, xUnit), e o
-rename só é aceito como seguro se seguir esta ordem:
+> **Nota de execução (2026-09-13):** o texto abaixo, como escrito originalmente, presumia que
+> este epic criaria "o primeiro projeto de teste do repositório". Isso deixou de ser verdade
+> entre a formalização do epic (2026-09-12) e sua implementação: `test-foundation-and-persistence-error-fixes.md`
+> (concluído em `docs/epics/finalizados/`) já criou `Limaj.Framework.Functions.Tests` cobrindo
+> exatamente os dois pontos abaixo — as 7 combinações de `ErrorType` em `ResultExtensionsTests.cs`
+> e os 4 ramos do bridge de exceção em `ExceptionBridgeTests.cs`, já passando contra o código
+> pré-rename. A Fase 1 original (criar o projeto + testes de caracterização) foi, portanto,
+> absorvida: em vez de recriá-la, o projeto de teste existente foi renomeado junto com o pacote
+> na Fase 2 (`Limaj.Framework.Functions.Tests` → `Limaj.Framework.Web.Tests`), preservando os
+> testes de caracterização já existentes como a rede de segurança do rename. Decisão tomada com
+> o usuário nesta sessão antes de prosseguir.
 
-1. Criar `Limaj.Framework.Web.Tests` cobrindo, como testes de caracterização do código
-   **atual** (antes de qualquer rename físico):
+1. ~~Criar `Limaj.Framework.Web.Tests`~~ — já existia como `Limaj.Framework.Functions.Tests`
+   (ver nota acima), cobrindo:
    - `ResultExtensions.MapError` — as 7 combinações de `ErrorType` → status code/corpo.
    - `ExceptionExtensions.ToHttpResult` — os 4 ramos (`DomainValidationException`,
      `NotFoundException`, `ConflictException`, default), incluindo o que é logado.
-2. Rodar os testes **antes** do rename físico — devem passar contra o código atual.
-3. Aplicar o rename físico (`git mv`, namespace, `.csproj`) + ajuste de vocabulário (DA-002).
-4. Rodar os mesmos testes **depois** do rename — devem passar inalterados, provando que
-   foi rename puro, não reescrita disfarçada.
-5. Adicionar teste específico para a correção de segurança (DA-004): erro não mapeado em
-   produção retorna mensagem genérica no corpo, `ex.Message` original só aparece no log.
+2. Testes confirmados passando **antes** do rename físico (herdados do epic de test-foundation).
+3. Rename físico aplicado (`git mv` a nível de arquivo — ver nota de execução na Fase 2 —,
+   namespace, `.csproj`) + ajuste de vocabulário (DA-002).
+4. Os mesmos testes, renomeados junto com o projeto, passam **depois** do rename sem alteração
+   de asserção — prova de rename puro, não reescrita disfarçada.
+5. Teste específico adicionado para a correção de segurança (DA-004): erro não mapeado retorna
+   mensagem genérica no corpo fora de ambiente de desenvolvimento; `ex.Message` original só
+   aparece no log (`ExceptionBridgeTests.ToHttpResult_UnknownException_*`).
 
 ## Checklist de fases
 
 ### Fase 1 — Rede de segurança antes do rename
-- [ ] Criar projeto `Limaj.Framework.Web.Tests` (xUnit) e adicioná-lo a `Limaj.Framework.sln`
-- [ ] Testes de caracterização de `ResultExtensions.MapError` (7 `ErrorType`)
-- [ ] Testes de caracterização de `ExceptionExtensions.ToHttpResult` (4 ramos)
-- [ ] Confirmar que todos os testes passam contra o código atual (`Limaj.Framework.Functions`)
+- [x] ~~Criar projeto `Limaj.Framework.Web.Tests`~~ — já existia (`Limaj.Framework.Functions.Tests`,
+      criado por `test-foundation-and-persistence-error-fixes.md`); renomeado na Fase 2 em vez de
+      recriado. Ver nota de execução acima.
+- [x] Testes de caracterização de `ResultExtensions.MapError` (7 `ErrorType`) — já existentes
+- [x] Testes de caracterização de `ExceptionExtensions.ToHttpResult` (4 ramos) — já existentes
+- [x] Confirmar que todos os testes passam contra o código atual (`Limaj.Framework.Functions`) —
+      confirmado via `dotnet test` antes do rename físico
 
 ### Fase 2 — Rename físico
-- [ ] `git mv packages/Limaj.Framework.Functions packages/Limaj.Framework.Web` (preservando histórico)
-- [ ] Atualizar `.csproj` (nome do projeto/assembly), namespaces e referências em `Limaj.Framework.sln`
-- [ ] Confirmar que os testes de caracterização da Fase 1 continuam passando sem alteração
+- [x] Pacote renomeado para `packages/Limaj.Framework.Web` preservando histórico (rename a nível
+      de arquivo via `git mv`/`git add`, não de diretório — um lock de processo em background do
+      VS Code/OmniSharp impediu `git mv`/`Rename-Item` no diretório inteiro; git detectou o rename
+      de qualquer forma pela similaridade de conteúdo de cada arquivo)
+- [x] `.csproj` (nome do projeto/assembly), namespaces e referências em `Limaj.Framework.sln`
+      atualizados; `Limaj.Framework.Architecture.Tests` também ajustado (referenciava o pacote)
+- [x] Testes de caracterização da Fase 1 continuam passando sem alteração de asserção —
+      confirmado via `dotnet test` (28/28 em `Limaj.Framework.Web.Tests`, 4/4 em
+      `Limaj.Framework.Architecture.Tests`)
 
 ### Fase 3 — Ajuste de vocabulário e correção de segurança
-- [ ] `FunctionRunner` → `RequestRunner`; parâmetro `functionName` → `operationName` (DA-002)
-- [ ] Corrigir vazamento de `ex.Message` no ramo 500 (DA-004) + teste cobrindo o novo comportamento
-- [ ] Atualizar mensagens/nomes de log que referenciam "function" para vocabulário neutro de host
+- [x] `FunctionRunner` → `RequestRunner`; parâmetro `functionName` → `operationName` (DA-002)
+- [x] Vazamento de `ex.Message` no ramo 500 corrigido (DA-004): mensagem genérica ao cliente fora
+      de `ASPNETCORE_ENVIRONMENT=Development`, `ex.Message` completo permanece só no log +
+      testes cobrindo os dois ramos (`ExceptionExtensions.cs`, `ExceptionBridgeTests.cs`)
+- [x] Mensagens/nomes de log que referenciavam "function" atualizados para vocabulário neutro de
+      host (`{Operation}`)
 
 ### Fase 4 — Atualização de documentação e consumidores
-- [ ] Atualizar tabela de camadas e seção "Exception bridge" em `CLAUDE.md`
-- [ ] Atualizar `README.md` (estrutura do repositório)
-- [ ] Levantar se `Limaj.Framework.Functions` é consumido hoje via `ProjectReference` ou
-      NuGet publicado, e decidir se é necessário shim de compatibilidade temporário antes
-      de comunicar a mudança a quem consome o pacote
+- [x] Tabela de camadas e seção "Exception bridge" em `CLAUDE.md` atualizadas
+- [x] `README.md` (estrutura do repositório, fronteiras arquiteturais, building blocks) atualizado
+- [x] Levantamento de consumidores: nenhum produto real referencia `Limaj.Framework.Functions` via
+      `ProjectReference` ou NuGet publicado hoje (confirmado por busca textual no repo antes do
+      rename — mesma constatação já registrada em DA-005 abaixo) — **sem necessidade de shim**,
+      condição já prevista em DA-005
 
 ## Decisões pendentes
 

@@ -11,7 +11,7 @@ Base reutilizável para acelerar criação de backends SaaS em .NET/Azure Functi
 - `packages/Limaj.Framework.Abstractions`: contratos, tipos comuns e erros base.
 - `packages/Limaj.Framework.Application`: camada de aplicação desacoplada de infraestrutura concreta.
 - `packages/Limaj.Framework.Persistence.EFCore`: adapters EF Core que implementam contratos das abstrações.
-- `packages/Limaj.Framework.Functions`: pipeline HTTP genérico para host Functions.
+- `packages/Limaj.Framework.Web`: pipeline HTTP genérico, agnóstico de host (Azure Functions isolated worker ou Minimal API — ambos falam `HttpRequest`/`IResult`).
 - `template-backend/`: gabarito para iniciar novos produtos — já traz `.claude/commands/`, `docs/epics/{backlog,em-andamento,finalizados}/` e `docs/README.md` prontos.
 - `docs/template-usage.md`: como consumir/evoluir o template, incluindo o ciclo de gestão de epics em `docs/epics/`.
 - `Limaj.Framework.sln`: solução do framework para build/test dos pacotes base.
@@ -174,14 +174,14 @@ Direção de dependência permitida (não quebrar):
 1. `Abstractions` → sem dependências internas.
 2. `Application` → apenas `Abstractions`.
 3. `Persistence.EFCore` → `Abstractions`.
-4. `Functions` (ou `Api`) → `Abstractions` + stack web/functions.
+4. `Web` (ou `Api`) → `Abstractions` + stack web/functions.
 
 `Application` nunca referencia persistência concreta, identidade do host ou
 infraestrutura. Se precisar de implementação concreta, defina o contrato em
 `Abstractions` e ponha o adapter na camada de infraestrutura.
 
 Building blocks a reaproveitar (não reinventar): `Result`/`Error` para fluxo de retorno,
-contratos de persistência para os services, e o pipeline HTTP genérico (`FunctionRunner`)
+contratos de persistência para os services, e o pipeline HTTP genérico (`RequestRunner`)
 para endpoints. Ver [CLAUDE.md](CLAUDE.md) para o catálogo completo de padrões.
 
 ## Manter os comandos em sincronia (só ao trabalhar NESTE repo)

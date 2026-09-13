@@ -1,8 +1,8 @@
 using System.Reflection;
 using Limaj.Framework.Abstractions.Common;
 using Limaj.Framework.Application.Services;
-using Limaj.Framework.Functions.Http;
 using Limaj.Framework.Persistence.EFCore.Repositories.Base;
+using Limaj.Framework.Web.Http;
 using NetArchTest.Rules;
 using Xunit;
 
@@ -12,7 +12,7 @@ namespace Limaj.Framework.Architecture.Tests;
 /// DA-005: asserts the dependency direction table in CLAUDE.md by reflection, so a future
 /// dynamic-typing/reflection-based workaround that the project-reference build check wouldn't
 /// catch still fails a test. Abstractions depends on nothing; Application, Persistence.EFCore
-/// and Functions may each depend only on Abstractions (plus their own declared external deps),
+/// and Web may each depend only on Abstractions (plus their own declared external deps),
 /// never on one another.
 /// </summary>
 public class PackageDependencyDirectionTests
@@ -20,7 +20,7 @@ public class PackageDependencyDirectionTests
     private static readonly Assembly AbstractionsAssembly = typeof(Result).Assembly;
     private static readonly Assembly ApplicationAssembly = typeof(BaseService<>).Assembly;
     private static readonly Assembly PersistenceEfCoreAssembly = typeof(BaseRepository<,>).Assembly;
-    private static readonly Assembly FunctionsAssembly = typeof(FunctionRunner).Assembly;
+    private static readonly Assembly WebAssembly = typeof(RequestRunner).Assembly;
 
     [Fact]
     public void Abstractions_DoesNotDependOnAnyOtherFrameworkPackage()
@@ -29,7 +29,7 @@ public class PackageDependencyDirectionTests
             AbstractionsAssembly,
             ApplicationAssembly.GetName().Name!,
             PersistenceEfCoreAssembly.GetName().Name!,
-            FunctionsAssembly.GetName().Name!);
+            WebAssembly.GetName().Name!);
     }
 
     [Fact]
@@ -38,23 +38,23 @@ public class PackageDependencyDirectionTests
         AssertNoDependencyOn(
             ApplicationAssembly,
             PersistenceEfCoreAssembly.GetName().Name!,
-            FunctionsAssembly.GetName().Name!);
+            WebAssembly.GetName().Name!);
     }
 
     [Fact]
-    public void PersistenceEfCore_DoesNotDependOnApplicationOrFunctions()
+    public void PersistenceEfCore_DoesNotDependOnApplicationOrWeb()
     {
         AssertNoDependencyOn(
             PersistenceEfCoreAssembly,
             ApplicationAssembly.GetName().Name!,
-            FunctionsAssembly.GetName().Name!);
+            WebAssembly.GetName().Name!);
     }
 
     [Fact]
-    public void Functions_DoesNotDependOnApplicationOrPersistenceEfCore()
+    public void Web_DoesNotDependOnApplicationOrPersistenceEfCore()
     {
         AssertNoDependencyOn(
-            FunctionsAssembly,
+            WebAssembly,
             ApplicationAssembly.GetName().Name!,
             PersistenceEfCoreAssembly.GetName().Name!);
     }
