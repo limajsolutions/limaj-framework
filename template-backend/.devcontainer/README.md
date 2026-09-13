@@ -1,138 +1,139 @@
-# Dev Container isolado para o Claude Code
+# Isolated Dev Container for Claude Code
 
-Ambiente de desenvolvimento containerizado onde o Claude Code opera **sem prompts de
-permissão** e **sem risco para a máquina host**. É parte do `template-backend`: ao criar
-um SaaS novo a partir deste gabarito, você herda este ambiente e só ajusta o **stack**
-(banco, storage, tipo de backend, frontend) — sem "codar um container do zero".
+Containerized development environment where Claude Code operates **without permission
+prompts** and **without risk to the host machine**. It is part of `template-backend`:
+when creating a new SaaS from this scaffold, you inherit this environment and only need
+to adjust the **stack** (database, storage, backend kind, frontend) — no "building a
+container from scratch".
 
-> Este documento é o guia operacional. As decisões de design (por que isolado, por que
-> sem socket do Docker, por que secrets dummy) estão na seção [Modelo de isolamento](#modelo-de-isolamento).
-
----
-
-## 1. Como usar (depois de clonado o produto)
-
-1. Tenha **Docker** + **VS Code** com a extensão **Dev Containers**.
-2. Abra o repo no VS Code → `Reopen in Container`.
-3. Aguarde o build da imagem + o `post-create.sh` (restore, secrets dummy, migrations).
-4. Rode `claude` no terminal integrado — **sem nenhuma flag de permissão**.
-
-O primeiro build é lento (baixa SDK/Node/tools); rebuilds são rápidos (cache de camadas).
+> This document is the operational guide. Design decisions (why isolated, why no
+> Docker socket, why dummy secrets) are in the [Isolation model](#5-isolation-model) section.
 
 ---
 
-## 2. O que sobe
+## 1. How to use (after cloning the product)
 
-| Serviço | Origem | Acesso interno | Exposto ao host? |
+1. Have **Docker** + **VS Code** with the **Dev Containers** extension.
+2. Open the repo in VS Code → `Reopen in Container`.
+3. Wait for the image build + `post-create.sh` (restore, dummy secrets, migrations).
+4. Run `claude` in the integrated terminal — **with no permission flag**.
+
+The first build is slow (downloads SDK/Node/tools); rebuilds are fast (layer cache).
+
+---
+
+## 2. What comes up
+
+| Service | Source | Internal access | Exposed to host? |
 |---|---|---|---|
-| `app` | `Dockerfile` (onde o VS Code/Claude rodam) | — | via forwardPorts (túnel VS Code) |
-| `sqlserver` *ou* `postgres` | fragmento de compose | `sqlserver:1433` / `postgres:5432` | **não** |
-| `azurite` (opcional) | fragmento de compose | `azurite:10000-10002` | **não** |
+| `app` | `Dockerfile` (where VS Code/Claude run) | — | via forwardPorts (VS Code tunnel) |
+| `sqlserver` *or* `postgres` | compose fragment | `sqlserver:1433` / `postgres:5432` | **no** |
+| `azurite` (optional) | compose fragment | `azurite:10000-10002` | **no** |
 
-**Comunicação por hostname de serviço, nunca `localhost`.** Nenhum serviço publica porta
-no Docker (`ports:`), então este ambiente **convive** com um `devops/` local rodando em
-paralelo sem colisão de porta. O acesso do host ao que roda *dentro* do `app` (frontend,
-API) é pelo `forwardPorts` do `devcontainer.json` — um túnel do VS Code, não do Docker.
+**Communication via service hostname, never `localhost`.** No service publishes a port
+on Docker (`ports:`), so this environment **coexists** with a local `devops/` running in
+parallel without port collisions. Host access to what runs *inside* `app` (frontend,
+API) goes through `forwardPorts` in `devcontainer.json` — a VS Code tunnel, not Docker's.
 
 ---
 
-## 3. Trocar de stack
+## 3. Switching stacks
 
-Toda a parametrização fica em **dois lugares**: a lista de fragmentos no `devcontainer.json`
-e as envs/args no `docker-compose.yml`. Nenhuma exige editar lógica de script.
+All parametrization lives in **two places**: the list of fragments in `devcontainer.json`
+and the envs/args in `docker-compose.yml`. None of them require editing script logic.
 
-### 3.1 Banco: SQL Server ↔ PostgreSQL
+### 3.1 Database: SQL Server ↔ PostgreSQL
 
-| Passo | SQL Server (default) | PostgreSQL |
+| Step | SQL Server (default) | PostgreSQL |
 |---|---|---|
-| `devcontainer.json` → `dockerComposeFile` | `compose.sqlserver.yml` | troque por `compose.postgres.yml` |
+| `devcontainer.json` → `dockerComposeFile` | `compose.sqlserver.yml` | swap for `compose.postgres.yml` |
 | `docker-compose.yml` → `app.environment.DB_ENGINE` | `sqlserver` | `postgres` |
 | `docker-compose.yml` → build args | `INSTALL_MSSQL: "true"` | `INSTALL_MSSQL: "false"`, `INSTALL_PSQL: "true"` |
 
-O `post-create.sh` deriva a connection string certa a partir de `DB_ENGINE`
-(`Server=sqlserver,1433;...` vs `Host=postgres;Port=5432;...`). **Sem banco?**
-`DB_ENGINE=none` (pula migrations e a connection string) e remova o fragmento de DB.
+`post-create.sh` derives the correct connection string from `DB_ENGINE`
+(`Server=sqlserver,1433;...` vs `Host=postgres;Port=5432;...`). **No database?**
+`DB_ENGINE=none` (skips migrations and the connection string) and remove the DB fragment.
 
-### 3.2 Backend: Azure Functions ↔ API ASP.NET Core
+### 3.2 Backend: Azure Functions ↔ ASP.NET Core API
 
 | | Functions (default) | API (Kestrel) |
 |---|---|---|
 | `BACKEND_KIND` | `functions` | `api` |
-| Config gerada | `src/Template.Functions/local.settings.json` | `src/Template.Api/appsettings.Development.json` |
+| Generated config | `src/Template.Functions/local.settings.json` | `src/Template.Api/appsettings.Development.json` |
 | Build arg | `INSTALL_FUNC: "true"` | `INSTALL_FUNC: "false"` |
-| Debug | terminal `func host start` + **Attach** | config **Launch API** do `launch.json` |
-| Porta | 7071 | 5000/5001 |
+| Debug | `func host start` terminal + **Attach** | `launch.json`'s **Launch API** config |
+| Port | 7071 | 5000/5001 |
 
-### 3.3 Storage Azure (Azurite)
+### 3.3 Azure Storage (Azurite)
 
-Inclua `compose.azurite.yml` e mantenha `USE_AZURITE=true` **só** se o backend usa Blob/
-Queue/Table (ex.: Functions com Timer/Queue trigger). Senão, remova o fragmento e
-`USE_AZURITE=false` — o `AzureWebJobsStorage` deixa de ser escrito na config.
+Include `compose.azurite.yml` and keep `USE_AZURITE=true` **only** if the backend uses Blob/
+Queue/Table (e.g., Functions with a Timer/Queue trigger). Otherwise, remove the fragment and
+set `USE_AZURITE=false` — `AzureWebJobsStorage` is no longer written to the config.
 
 ### 3.4 Frontend (Node + Vite)
 
-`USE_FRONTEND=true` roda `npm ci` em `web/` no bootstrap; `INSTALL_NODE: "true"` põe Node
-24 na imagem. API pura sem frontend: ambos `false` (a imagem fica menor e o Claude ainda
-é instalado via instalador nativo).
+`USE_FRONTEND=true` runs `npm ci` in `web/` during bootstrap; `INSTALL_NODE: "true"` puts
+Node 24 in the image. For a pure API with no frontend: both `false` (the image stays
+smaller and Claude is still installed via the native installer).
 
 ---
 
-## 4. O que o `post-create.sh` faz (idempotente)
+## 4. What `post-create.sh` does (idempotent)
 
-`dotnet restore` → (`npm ci` se frontend) → gera secrets **dummy** e escreve a config local
-(`local.settings.json` ou `appsettings.Development.json`) → instala a allowlist do Claude no
-container → `dotnet tool restore` → `dotnet ef database update` (com retry até o banco ficar
-pronto). Rodar de novo não duplica nem corrompe nada.
+`dotnet restore` → (`npm ci` if frontend) → generates **dummy** secrets and writes the local
+config (`local.settings.json` or `appsettings.Development.json`) → installs the Claude
+allowlist in the container → `dotnet tool restore` → `dotnet ef database update` (with retry
+until the database is ready). Running it again doesn't duplicate or corrupt anything.
 
-Armadilhas já resolvidas (não reintroduza ao adaptar):
-- **Connection string interna** (`sqlserver`/`postgres`, não `localhost`) — sem isso o app não acha o banco.
-- **`ConnectionStrings__Default` exportado** antes do `dotnet ef` — em design-time o EF ignora o config do host.
-- **Regeneração de `local.settings.json` cifrado** — config cifrada no host não descriptografa no container.
-- **Azurite por connection string explícita** — `UseDevelopmentStorage=true` aponta para 127.0.0.1 e não acha o serviço.
-
----
-
-## 5. Modelo de isolamento
-
-O Claude **pode** livremente: editar o workspace, `dotnet build/test/ef`, subir `func`/
-`vite`/API, conectar no banco e no Azurite internos, e até estragar o próprio container.
-
-O Claude **não alcança**: o filesystem do host fora do workspace, o Docker Engine do host
-(o socket `/var/run/docker.sock` **não** é montado), outros containers do host, segredos
-reais (só dummies entram), bancos/storage de produção.
-
-Por isso a allowlist ampla (`claude-settings.json`, com `bypassPermissions`) é segura:
-ela vive **só** dentro do container (o `post-create.sh` a copia para `~/.claude/settings.json`).
-**Nunca** a mergeie no `.claude/settings.json` versionado do host.
-
-**Recuperação de desastre:** se algo corromper, use `Rebuild Container`. Dados de banco
-vivem em volume `*_dev` separado — apague o volume e o `post-create` recria o schema.
+Pitfalls already solved (don't reintroduce them when adapting):
+- **Internal connection string** (`sqlserver`/`postgres`, not `localhost`) — without this the app can't find the database.
+- **`ConnectionStrings__Default` exported** before `dotnet ef` — at design time, EF ignores the host's config.
+- **Regenerating an encrypted `local.settings.json`** — config encrypted on the host won't decrypt inside the container.
+- **Azurite via explicit connection string** — `UseDevelopmentStorage=true` points to 127.0.0.1 and can't find the service.
 
 ---
 
-## 6. Adaptar ao renomear o template
+## 5. Isolation model
 
-Ao trocar `Template` → nome do produto, ajuste também:
-- `docker-compose.yml` e fragmentos: rede `template_devnet`, `container_name *-dev`, volumes `*_dev`.
-- `post-create.sh`: `PROJECT_NAME` e os caminhos dos projetos.
-- `launch.json`: caminho do `.dll` da API.
-- `devcontainer.json`: o `name`.
+Claude **can** freely: edit the workspace, `dotnet build/test/ef`, bring up `func`/
+`vite`/API, connect to the internal database and Azurite, and even break the container itself.
+
+Claude **cannot reach**: the host filesystem outside the workspace, the host's Docker Engine
+(the `/var/run/docker.sock` socket is **not** mounted), other host containers, real secrets
+(only dummies go in), or production databases/storage.
+
+That's why the broad allowlist (`claude-settings.json`, with `bypassPermissions`) is safe:
+it lives **only** inside the container (`post-create.sh` copies it to `~/.claude/settings.json`).
+**Never** merge it into the host's versioned `.claude/settings.json`.
+
+**Disaster recovery:** if something breaks, use `Rebuild Container`. Database data lives
+in a separate `*_dev` volume — delete the volume and `post-create` recreates the schema.
 
 ---
 
-## 7. Arquivos
+## 6. Adapting when renaming the template
+
+When swapping `Template` → the product name, also adjust:
+- `docker-compose.yml` and fragments: `template_devnet` network, `container_name *-dev`, `*_dev` volumes.
+- `post-create.sh`: `PROJECT_NAME` and the project paths.
+- `launch.json`: the API's `.dll` path.
+- `devcontainer.json`: the `name`.
+
+---
+
+## 7. Files
 
 ```
 .devcontainer/
-├── devcontainer.json        # serviço-alvo, fragmentos, forwardPorts, postCreate
-├── docker-compose.yml       # BASE: só o serviço `app` (+ envs de parametrização)
-├── compose.sqlserver.yml    # fragmento DB — SQL Server 2022
-├── compose.postgres.yml     # fragmento DB — PostgreSQL 16
-├── compose.azurite.yml      # fragmento storage — Azurite (opcional)
-├── Dockerfile               # imagem do `app`; camadas opcionais via build args
-├── post-create.sh           # bootstrap idempotente, parametrizado por env
-├── claude-settings.json     # allowlist ampla — SÓ dentro do container
-└── README.md                # este guia
+├── devcontainer.json        # target service, fragments, forwardPorts, postCreate
+├── docker-compose.yml       # BASE: just the `app` service (+ parametrization envs)
+├── compose.sqlserver.yml    # DB fragment — SQL Server 2022
+├── compose.postgres.yml     # DB fragment — PostgreSQL 16
+├── compose.azurite.yml      # storage fragment — Azurite (optional)
+├── Dockerfile               # `app` image; optional layers via build args
+├── post-create.sh           # idempotent bootstrap, parametrized by env
+├── claude-settings.json     # broad allowlist — ONLY inside the container
+└── README.md                # this guide
 .vscode/
 └── launch.json              # attach (Functions) / launch (API Kestrel)
 ```

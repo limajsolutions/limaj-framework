@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Limaj Framework is a reusable base for .NET 9 / Azure Functions SaaS backends. It contains two distinct, **independent** parts:
 
 1. `packages/Limaj.Framework.*` — generic, domain-agnostic building blocks (the actual framework code).
-2. `template-backend/` — a scaffold meant to be copied into new product repositories. It is **not** in the solution and most of its `src/`/`test/` directories are placeholder READMEs only (no `.csproj` files yet).
+2. `template-backend/` — a scaffold meant to be copied into new product repositories. It is **not** in the solution and most of its `src/`/`test/` directories are empty (a `.gitkeep` only, no `.csproj` files yet).
 
 The framework packages are the only buildable code in the repo today.
 
@@ -19,7 +19,7 @@ Build the framework solution (only the four packages are included):
 dotnet build Limaj.Framework.sln
 ```
 
-There are no tests inside this repo yet — `Limaj.Framework.sln` contains no test projects, and the test folders under `template-backend/test/` are placeholder READMEs. Do not invent a `dotnet test` workflow until real test projects exist.
+`Limaj.Framework.sln` has test projects under `packages/` (one per package, plus `Limaj.Framework.Architecture.Tests` for the dependency-direction check) — run them with `dotnet test Limaj.Framework.sln`. The test folders under `template-backend/test/` are still empty (`.gitkeep` only, no `.csproj` files yet) — do not invent a `dotnet test` workflow for `template-backend/` until real test projects exist there.
 
 The template-backend's `.github/workflows/*.yml` are **placeholders** (`echo "TODO: ..."`). Don't treat them as a working CI mechanism. `template-backend/scripts/sync-commands.sh` IS functional — it mirrors the canonical commands (`template-backend/.claude/commands/`) to the repo root (`.claude/commands/`).
 

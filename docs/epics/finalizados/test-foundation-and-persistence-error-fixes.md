@@ -1,164 +1,166 @@
-# Fundação de testes, correção do UnitOfWork e extensibilidade de persistência/erro
+# Test foundation, UnitOfWork fix, and persistence/error extensibility
 
-**Status:** Finalizado (implementação — sign-off funcional é decisão do usuário)
+**Status:** Done (implementation — functional sign-off is the user's decision)
 **Última revisão:** 2026-09-12
 
-## Contexto
+## Context
 
-Uma investigação técnica (`/spike`, modo investigação) comparando `packages/Limaj.Framework.*`
-com um produto real construído de forma independente (`FinanceFlow`) revelou que o framework
-não tem nenhuma rede de testes hoje (`Limaj.Framework.sln` não contém nenhum projeto de teste)
-e carrega um bug conhecido de infraestrutura de persistência, além de dois pontos de
-extensibilidade aditiva que o FinanceFlow precisou reimplementar em paralelo por falta deles
-no framework.
+A technical investigation (`/spike`, investigation mode) comparing `packages/Limaj.Framework.*`
+with a real, independently built product (`FinanceFlow`) revealed that the framework has no
+test net today (`Limaj.Framework.sln` contains no test project) and carries a known
+persistence-infrastructure bug, plus two additive extensibility points that FinanceFlow had
+to reimplement in parallel due to their absence in the framework.
 
-`/arquiteto` e `/analyst`, consultados via `/flow`, convergiram sem necessidade de
-contraposição sobre os quatro itens abaixo. Depois, numa sessão seguinte sobre a criação de
-uma pipeline de publicação de pacotes (ver Relacionado), os dois especialistas convergiram de
-novo em que **a ausência de testes é bloqueante para publicar qualquer pacote versionado** —
-publicar sem teste é distribuir como "verificado" o que só foi compilado. Isso torna a Fase 2
-deste epic (fundação de testes) um pré-requisito direto do epic de publicação, não apenas um
-item de qualidade desejável isolado.
+`/arquiteto` and `/analyst`, consulted via `/flow`, converged without needing a
+counter-argument round on the four items below. Later, in a follow-up session about
+creating a package-publishing pipeline (see Related), both specialists converged again on
+**the lack of tests being blocking for publishing any versioned package** — publishing
+without tests distributes as "verified" something that was only compiled. This makes this
+epic's Phase 2 (test foundation) a direct prerequisite of the publishing epic, not just an
+isolated nice-to-have quality item.
 
-## Decisões arquiteturais
+## Architectural decisions
 
-- **DA-001 — Bug do `UnitOfWork<TDbContext>` (P0, correção pura).**
-  `ExecuteInTransactionAsync` é incompatível com `EnableRetryOnFailure`: o EF Core exige que
-  qualquer código que rode dentro de uma execution strategy com retry seja executado via
-  `Database.CreateExecutionStrategy().ExecuteAsync(...)`, e o método atual não faz isso — abre
-  transação diretamente, o que falha (ou mascara falha de retry) quando o `DbContext` está
-  configurado com retry habilitado. Não há decisão de design pendente aqui, é correção de bug.
+- **DA-001 — `UnitOfWork<TDbContext>` bug (P0, pure fix).**
+  `ExecuteInTransactionAsync` is incompatible with `EnableRetryOnFailure`: EF Core requires
+  any code running inside a retry-enabled execution strategy to run via
+  `Database.CreateExecutionStrategy().ExecuteAsync(...)`, and the current method doesn't do
+  that — it opens a transaction directly, which fails (or masks a retry failure) when the
+  `DbContext` is configured with retry enabled. There's no pending design decision here,
+  it's a bug fix.
 
-- **DA-002 — Utilitários de persistência aditivos (P1).** Três extension methods novos, sem
-  alterar nenhum contrato existente: `DesignTimeDbContextFactoryBase` (base para
-  `IDesignTimeDbContextFactory<T>` usada por migrations), `UseSqlServerWithRetry` (wrapper de
-  `UseSqlServer` já configurando `EnableRetryOnFailure` com os parâmetros corretos, evitando
-  reincidência do bug DA-001 em quem configura retry manualmente) e
-  `UseUtcDateTimeConversion` (value converter para forçar `DateTime`/`DateTimeOffset` como UTC
-  no mapeamento EF Core).
+- **DA-002 — Additive persistence utilities (P1).** Three new extension methods, with no
+  change to any existing contract: `DesignTimeDbContextFactoryBase` (a base for
+  `IDesignTimeDbContextFactory<T>` used by migrations), `UseSqlServerWithRetry` (a wrapper
+  around `UseSqlServer` that already configures `EnableRetryOnFailure` with the correct
+  parameters, avoiding a recurrence of the DA-001 bug for whoever configures retry
+  manually), and `UseUtcDateTimeConversion` (a value converter to force `DateTime`/
+  `DateTimeOffset` as UTC in the EF Core mapping).
 
-- **DA-003 — Mecanismo de extensibilidade de erro (P1).** `Error` ganha um `HttpStatusCode`
-  opcional (nullable), e passa a existir um contrato `IExceptionToErrorMapper` plugável que o
-  host (`Limaj.Framework.Functions`/`Web`) pode resolver via DI para mapear exceções não
-  cobertas pela ponte padrão. **`ErrorType` continua fechado em 7 valores — não ganha novos
-  membros.** Restrição crítica, sem excepção: nenhum tipo de erro concreto de domínio de
-  produto (ex. `PlanLimitExceeded`) pode subir para dentro do framework — apenas o mecanismo de
-  extensão. Um teste deve travar isso (ver Fase 4).
+- **DA-003 — Error extensibility mechanism (P1).** `Error` gains an optional (nullable)
+  `HttpStatusCode`, and a pluggable `IExceptionToErrorMapper` contract now exists that the
+  host (`Limaj.Framework.Functions`/`Web`) can resolve via DI to map exceptions not covered
+  by the default bridge. **`ErrorType` remains closed at 7 values — it does not gain new
+  members.** Critical, no-exceptions constraint: no concrete product/domain error type
+  (e.g. `PlanLimitExceeded`) can climb into the framework — only the extension mechanism
+  can. A test must lock this in (see Phase 4).
 
-- **DA-004 — Fundação de testes (pré-requisito bloqueante para publicação de pacotes).** Um
-  projeto de teste por pacote (`Limaj.Framework.Abstractions.Tests`,
+- **DA-004 — Test foundation (blocking prerequisite for package publishing).** One test
+  project per package (`Limaj.Framework.Abstractions.Tests`,
   `Limaj.Framework.Application.Tests`, `Limaj.Framework.Persistence.EFCore.Tests`,
-  `Limaj.Framework.Functions.Tests`), adicionado a `Limaj.Framework.sln`, cobrindo os contratos
-  centrais que o `CLAUDE.md` já nomeia como building blocks reutilizáveis — são exatamente as
-  peças que um consumidor externo (futuro) vai depender de não quebrar silenciosamente.
+  `Limaj.Framework.Functions.Tests`), added to `Limaj.Framework.sln`, covering the core
+  contracts `CLAUDE.md` already names as reusable building blocks — exactly the pieces a
+  (future) external consumer will depend on not silently breaking.
 
-- **DA-005 — Teste de arquitetura da tabela de dependência.** Um teste baseado em reflection
-  (ex. NetArchTest) que assevera programaticamente a direção de dependência entre os 4 pacotes
-  (`Abstractions` não referencia nada; `Application`/`Persistence.EFCore`/`Functions`
-  referenciam só `Abstractions` + suas dependências externas declaradas no `CLAUDE.md`). O
-  build já pega isso por referência de projeto, mas o teste resiste a um contorno futuro via
-  reflection/tipos dinâmicos que o build não pegaria.
+- **DA-005 — Dependency-table architecture test.** A reflection-based test (e.g.
+  NetArchTest) that programmatically asserts the dependency direction between the 4
+  packages (`Abstractions` references nothing; `Application`/`Persistence.EFCore`/
+  `Functions` reference only `Abstractions` + their declared external dependencies from
+  `CLAUDE.md`). The build already catches this via project references, but the test
+  resists a future workaround via reflection/dynamic types that the build wouldn't catch.
 
-## Estrutura proposta por camada
+## Proposed structure by layer
 
 ```
 packages/
   Limaj.Framework.Abstractions/
-    Limaj.Framework.Abstractions.Tests/        (novo)
+    Limaj.Framework.Abstractions.Tests/        (new)
   Limaj.Framework.Application/
-    Limaj.Framework.Application.Tests/          (novo)
+    Limaj.Framework.Application.Tests/          (new)
   Limaj.Framework.Persistence.EFCore/
     src/Persistence/Extensions/
-      DesignTimeDbContextFactoryBase.cs          (novo)
-      SqlServerRetryExtensions.cs                (novo — UseSqlServerWithRetry)
-      UtcDateTimeConversionExtensions.cs          (novo — UseUtcDateTimeConversion)
-    Limaj.Framework.Persistence.EFCore.Tests/    (novo)
+      DesignTimeDbContextFactoryBase.cs          (new)
+      SqlServerRetryExtensions.cs                (new — UseSqlServerWithRetry)
+      UtcDateTimeConversionExtensions.cs          (new — UseUtcDateTimeConversion)
+    Limaj.Framework.Persistence.EFCore.Tests/    (new)
   Limaj.Framework.Functions/
-    Limaj.Framework.Functions.Tests/             (novo)
-  Limaj.Framework.Architecture.Tests/             (novo — teste de dependência entre pacotes, DA-005)
+    Limaj.Framework.Functions.Tests/             (new)
+  Limaj.Framework.Architecture.Tests/             (new — cross-package dependency test, DA-005)
 ```
 
-`Limaj.Framework.sln` passa a incluir 5 novos projetos de teste, mantendo a mesma direção de
-dependência já documentada no `CLAUDE.md` (nenhum projeto de teste de uma camada referencia
-implementação de outra além do que a própria camada já referenciaria em produção).
+`Limaj.Framework.sln` now includes 5 new test projects, keeping the same dependency
+direction already documented in `CLAUDE.md` (no test project of one layer references
+another layer's implementation beyond what that layer would already reference in
+production).
 
-## Estratégia de testes
+## Test strategy
 
-- **`Limaj.Framework.Abstractions.Tests`** — `Result`/`Result<T>` (todas as combinações de
-  sucesso/erro), `Error` (incluindo o novo `HttpStatusCode` opcional de DA-003).
-- **`Limaj.Framework.Application.Tests`** — nada de domínio a testar hoje (pacote é
-  intencionalmente vazio de regra de negócio); cobre apenas contratos/abstrações que existirem
-  na camada, se houver.
+- **`Limaj.Framework.Abstractions.Tests`** — `Result`/`Result<T>` (every success/error
+  combination), `Error` (including the new optional `HttpStatusCode` from DA-003).
+- **`Limaj.Framework.Application.Tests`** — no domain logic to test today (the package is
+  intentionally free of business rules); covers only whatever contracts/abstractions exist
+  in the layer, if any.
 - **`Limaj.Framework.Persistence.EFCore.Tests`** — `BaseRepository` (soft delete via
   `IsActive`, opt-in `includeInactive`, `HardDeleteByIdAsync`), `UnitOfWork<TDbContext>`
-  (commit/rollback, e o cenário específico do bug DA-001: transação com retry habilitado não
-  falha), os 3 utilitários novos de DA-002.
-- **`Limaj.Framework.Functions.Tests`** — `ResultExtensions.ToHttpResult` (as 7 combinações de
-  `ErrorType` → status/corpo), `ExceptionExtensions`/`FunctionRunner.RunAsync` (os 4 ramos:
-  `DomainValidationException`, `NotFoundException`, `ConflictException`, default), e o
-  `IExceptionToErrorMapper` plugável de DA-003 (incluindo o teste negativo: nenhum tipo de erro
-  de domínio de produto é referenciado no assembly do framework).
-- **`Limaj.Framework.Architecture.Tests`** — só o teste de dependência de DA-005.
+  (commit/rollback, and the specific DA-001 bug scenario: a transaction with retry enabled
+  doesn't fail), the 3 new DA-002 utilities.
+- **`Limaj.Framework.Functions.Tests`** — `ResultExtensions.ToHttpResult` (the 7
+  `ErrorType` → status/body combinations), `ExceptionExtensions`/`FunctionRunner.RunAsync`
+  (the 4 branches: `DomainValidationException`, `NotFoundException`, `ConflictException`,
+  default), and the DA-003 pluggable `IExceptionToErrorMapper` (including the negative
+  test: no product/domain error type is referenced in the framework assembly).
+- **`Limaj.Framework.Architecture.Tests`** — only the DA-005 dependency test.
 
-Sem gate de percentual de cobertura (`coverlet`/threshold) — cobertura comportamental dos
-contratos públicos é o critério, não métrica arbitrária.
+No coverage-percentage gate (`coverlet`/threshold) — behavioral coverage of the public
+contracts is the criterion, not an arbitrary metric.
 
-## Checklist de fases
+## Phase checklist
 
-### Fase 1 — Correção de bug (P0)
-- [x] Corrigir `UnitOfWork<TDbContext>.ExecuteInTransactionAsync` para usar
+### Phase 1 — Bug fix (P0)
+- [x] Fix `UnitOfWork<TDbContext>.ExecuteInTransactionAsync` to use
       `Database.CreateExecutionStrategy().ExecuteAsync(...)`
-- [x] Teste de caracterização cobrindo transação com `EnableRetryOnFailure` habilitado
+- [x] Characterization test covering a transaction with `EnableRetryOnFailure` enabled
 
-### Fase 2 — Fundação de testes (bloqueante para o epic de publicação, ver Relacionado)
-- [x] Criar os 4 projetos de teste (um por pacote) + `Limaj.Framework.Architecture.Tests`,
-      adicionar todos a `Limaj.Framework.sln`
-- [x] Cobertura de `Result`/`Error`/`ResultExtensions.ToHttpResult` (7 `ErrorType`)
-- [x] Cobertura da ponte de exceção (`FunctionRunner.RunAsync` + `ExceptionExtensions`, 4 ramos)
-- [x] Cobertura de `BaseRepository` (soft delete, `includeInactive`, `HardDeleteByIdAsync`) —
-      **achado fora do escopo original, corrigido nesta sessão com aval explícito do usuário**:
-      `BaseEntityConfiguration<T>.Configure()` nunca chamava `HasQueryFilter(e => e.IsActive)`,
-      então soft delete não excluía nada por padrão e `includeInactive` (`IgnoreQueryFilters()`)
-      era inerte (não havia filtro para ignorar). Corrigido adicionando o `HasQueryFilter`. Como
-      consequência direta dessa correção, `SoftDeleteByIdAsync`/`RestoreByIdAsync` (que
-      consultavam via `Set.Where(...)`, agora sujeito ao filtro) e `HardDeleteByIdAsync`
-      (delegava para o agora-filtrado `GetByIdAsync`, e usava `AsNoTracking()` causando conflito
-      de identidade quando a entidade já estava rastreada no mesmo `DbContext`) também precisaram
-      de ajuste — todos os três agora usam `IgnoreQueryFilters()`, e `HardDeleteByIdAsync` deixou
-      de usar `AsNoTracking()` para permitir resolução de identidade do EF Core. Coberto por 9
-      testes novos em `BaseRepositoryTests`.
-- [x] Cobertura de `UnitOfWork` (commit/rollback) — coberta pelos 3 testes de caracterização da
-      Fase 1 (`UnitOfWorkExecuteInTransactionAsyncTests`)
-- [x] Teste de arquitetura validando a tabela de dependência entre os 4 pacotes
+### Phase 2 — Test foundation (blocking for the publishing epic, see Related)
+- [x] Create the 4 test projects (one per package) + `Limaj.Framework.Architecture.Tests`,
+      add all of them to `Limaj.Framework.sln`
+- [x] Coverage of `Result`/`Error`/`ResultExtensions.ToHttpResult` (7 `ErrorType`)
+- [x] Coverage of the exception bridge (`FunctionRunner.RunAsync` + `ExceptionExtensions`, 4 branches)
+- [x] Coverage of `BaseRepository` (soft delete, `includeInactive`, `HardDeleteByIdAsync`) —
+      **out-of-original-scope finding, fixed in this session with explicit user approval**:
+      `BaseEntityConfiguration<T>.Configure()` never called `HasQueryFilter(e => e.IsActive)`,
+      so soft delete excluded nothing by default and `includeInactive`
+      (`IgnoreQueryFilters()`) was a no-op (there was no filter to ignore). Fixed by adding
+      the `HasQueryFilter`. As a direct consequence of that fix,
+      `SoftDeleteByIdAsync`/`RestoreByIdAsync` (which queried via `Set.Where(...)`, now
+      subject to the filter) and `HardDeleteByIdAsync` (which delegated to the now-filtered
+      `GetByIdAsync`, and used `AsNoTracking()` causing an identity conflict when the entity
+      was already tracked in the same `DbContext`) also needed adjustment — all three now use
+      `IgnoreQueryFilters()`, and `HardDeleteByIdAsync` stopped using `AsNoTracking()` to allow
+      EF Core identity resolution. Covered by 9 new tests in `BaseRepositoryTests`.
+- [x] Coverage of `UnitOfWork` (commit/rollback) — covered by the 3 Phase 1 characterization
+      tests (`UnitOfWorkExecuteInTransactionAsyncTests`)
+- [x] Architecture test validating the dependency table across the 4 packages
 
-### Fase 3 — Utilitários de persistência (P1)
+### Phase 3 — Persistence utilities (P1)
 - [x] `DesignTimeDbContextFactoryBase`
 - [x] `UseSqlServerWithRetry`
 - [x] `UseUtcDateTimeConversion`
-- [x] Testes cobrindo os 3 utilitários
+- [x] Tests covering the 3 utilities
 
-### Fase 4 — Mecanismo de extensibilidade de erro (P1)
-- [x] `Error.HttpStatusCode` opcional
-- [x] `IExceptionToErrorMapper` plugável, resolvido via DI no host
-- [x] Teste garantindo que `ErrorType` permanece fechado em 7 valores
-- [x] Teste negativo garantindo que nenhum tipo de erro concreto de domínio de produto é
-      referenciado dentro do framework
+### Phase 4 — Error extensibility mechanism (P1)
+- [x] Optional `Error.HttpStatusCode`
+- [x] Pluggable `IExceptionToErrorMapper`, resolved via DI in the host
+- [x] Test guaranteeing `ErrorType` stays closed at 7 values
+- [x] Negative test guaranteeing no concrete product/domain error type is referenced inside
+      the framework
 
-## Decisões pendentes
+## Open decisions
 
-> Decisão pendente: DA-006 — se o pacote `Limaj.Framework.Testing` (+ `Testing.Functions`),
-> levantado na mesma investigação original como P1 (`TestBase` AutoFixture+AutoMoq, specimen
-> builders, fake `IUserIdentityGateway`, host de integração SQLite in-memory), entra neste epic
-> ou vira epic próprio. Por decisão do usuário nesta sessão, **não** foi incluído aqui — seu
-> escopo é diferente (criação de um pacote novo de utilitários de teste *para consumidores*,
-> não a rede de testes do próprio framework) e ainda não foi formalizado.
+> Pending decision: DA-006 — whether the `Limaj.Framework.Testing` package
+> (+ `Testing.Functions`), raised in the same original investigation as P1 (AutoFixture+AutoMoq
+> `TestBase`, specimen builders, a fake `IUserIdentityGateway`, a SQLite in-memory
+> integration host), belongs in this epic or becomes its own epic. By the user's decision in
+> this session, it was **not** included here — its scope is different (creating a new
+> test-utilities package *for consumers*, not the framework's own test net) and it hasn't
+> been formalized yet.
 
-## Relacionado
+## Related
 
-- **Bloqueia** `docs/epics/backlog/nuget-package-publishing-pipeline.md` — a Fase 2 deste epic
-  (fundação de testes) precisa estar concluída antes do primeiro publish real de pacote.
-- Investigação técnica que originou os gaps: comparação `Limaj.Framework.*` vs. `FinanceFlow`
-  (sessão `/flow`, 2026-09-12).
-- Não relacionado ao epic `rename-functions-to-web.md` além da ordem de sequenciamento definida
-  no epic de publicação (o rename precede o primeiro publish, este epic de testes também
-  precede — os três epics compartilham o mesmo marco "antes do primeiro publish real").
+- **Blocks** `docs/epics/backlog/nuget-package-publishing-pipeline.md` — this epic's
+  Phase 2 (test foundation) must be complete before the first real package publish.
+- Technical investigation that surfaced the gaps: `Limaj.Framework.*` vs. `FinanceFlow`
+  comparison (`/flow` session, 2026-09-12).
+- Unrelated to the `rename-functions-to-web.md` epic beyond the sequencing order defined
+  in the publishing epic (the rename precedes the first publish, this test epic also
+  precedes it — the three epics share the same "before the first real publish" milestone).

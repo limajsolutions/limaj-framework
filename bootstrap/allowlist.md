@@ -1,10 +1,10 @@
 # Bootstrap Allowlist (Source of Truth)
 
 - Source (read-only): `/media/tvlima/STORAGE/Repos/<legacy-source-repo>`
-- Target: `./` (repositório atual `limaj-framework`)
-- Regra: copiar somente itens explicitamente allowlisted; nunca copiar o repositório inteiro.
+- Target: `./` (current repository `limaj-framework`)
+- Rule: copy only explicitly allowlisted items; never copy the entire repository.
 
-## Copiar agora (arquivos genéricos)
+## Copy now (generic files)
 
 - `.claude/commands/analyst.md`
 - `.claude/commands/spike.md`
@@ -15,17 +15,17 @@
 - `.claude/commands/infra.md`
 - `.claude/commands/flow.md`
 
-## Adaptar antes de copiar
+## Adapt before copying
 
-- Qualquer arquivo que contenha:
-- nomes de produto, exemplos, paths ou contexto específicos
-- namespaces/projetos específicos (ex.: nomes de solução, assemblies, csproj)
-- referências de produto/domínio (entidades, regras de negócio, backlog legado)
-- configuração de ambiente acoplada (resource names, IDs, URLs reais)
+- Any file that contains:
+- product names, examples, paths, or specific context
+- specific namespaces/projects (e.g., solution names, assemblies, csproj)
+- product/domain references (entities, business rules, legacy backlog)
+- coupled environment configuration (resource names, real IDs, URLs)
 
-## Não copiar
+## Do not copy
 
-- artefatos de seed de dados de produto
-- qualquer arquivo/pasta com nome ou conteúdo específico de um produto
-- código de domínio, features de negócio e migração de legado
-- segredos, variáveis sensíveis e arquivos de ambiente reais
+- product seed-data artifacts
+- any file/folder with a name or content specific to a product
+- domain code, business features, and legacy migration
+- secrets, sensitive variables, and real environment files

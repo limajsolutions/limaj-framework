@@ -1,295 +1,294 @@
 # Limaj Framework
 
-Base reutilizável para acelerar criação de backends SaaS em .NET/Azure Functions, com foco em:
+Reusable base for accelerating the creation of SaaS backends in .NET/Azure Functions, focused on:
 
-- building blocks técnicos genéricos (`packages/Limaj.Framework.*`)
-- template de projeto backend (`template-backend/`), com Dev Container isolado para o Claude Code
-- slash commands do Claude Code (`.claude/commands/`) carregados como sessões especializadas
+- generic technical building blocks (`packages/Limaj.Framework.*`)
+- a backend project template (`template-backend/`), with an isolated Dev Container for Claude Code
+- Claude Code slash commands (`.claude/commands/`) loaded as specialized sessions
 
-## Estrutura do repositório
+## Repository structure
 
-- `packages/Limaj.Framework.Abstractions`: contratos, tipos comuns e erros base.
-- `packages/Limaj.Framework.Application`: camada de aplicação desacoplada de infraestrutura concreta.
-- `packages/Limaj.Framework.Persistence.EFCore`: adapters EF Core que implementam contratos das abstrações.
-- `packages/Limaj.Framework.Web`: pipeline HTTP genérico, agnóstico de host (Azure Functions isolated worker ou Minimal API — ambos falam `HttpRequest`/`IResult`).
-- `template-backend/`: gabarito para iniciar novos produtos — já traz `.claude/commands/`, `docs/epics/{backlog,em-andamento,finalizados}/` e `docs/README.md` prontos.
-- `docs/template-usage.md`: como consumir/evoluir o template, incluindo o ciclo de gestão de epics em `docs/epics/`.
-- `Limaj.Framework.sln`: solução do framework para build/test dos pacotes base.
+- `packages/Limaj.Framework.Abstractions`: contracts, common types, and base errors.
+- `packages/Limaj.Framework.Application`: application layer decoupled from concrete infrastructure.
+- `packages/Limaj.Framework.Persistence.EFCore`: EF Core adapters implementing the abstraction contracts.
+- `packages/Limaj.Framework.Web`: generic HTTP pipeline, host-agnostic (Azure Functions isolated worker or Minimal API — both speak `HttpRequest`/`IResult`).
+- `template-backend/`: scaffold for starting new products — already ships `.claude/commands/`, `docs/epics/{backlog,em-andamento,finalizados}/`, and `docs/README.md`.
+- `docs/template-usage.md`: how to consume/evolve the template, including the epic-management lifecycle under `docs/epics/`.
+- `Limaj.Framework.sln`: framework solution for building/testing the base packages.
 
-## Iniciar um novo SaaS a partir deste gabarito (passo a passo)
+## Starting a new SaaS from this scaffold (step-by-step)
 
-Guia executável de ponta a ponta. Siga na ordem; cada bloco é copiável. O exemplo
-usa o nome de produto **`Acme`** — troque por `MeuSaas` à vontade.
+End-to-end executable guide. Follow it in order; each block is copy-pasteable. The example
+uses the product name **`Acme`** — swap it for `YourSaas` freely.
 
-> **Pré-requisitos:** `git`, `docker`, `dotnet` SDK 9, VS Code com a extensão
-> **Dev Containers**, e a CLI `gh` (opcional, só para criar o repo no GitHub).
+> **Prerequisites:** `git`, `docker`, `dotnet` SDK 9, VS Code with the **Dev Containers**
+> extension, and the `gh` CLI (optional, only to create the repo on GitHub).
 >
-> **Nota de honestidade:** hoje `template-backend/src/` e `template-backend/test/`
-> contêm apenas READMEs placeholder — **não há `.csproj`/`.sln` prontos**. Os passos 4–5
-> criam a estrutura .NET real. Quando o template passar a trazer projetos prontos, os
-> passos 4–5 viram apenas "renomear".
+> **Honesty note:** today `template-backend/src/` and `template-backend/test/`
+> only contain empty folders (`.gitkeep`) — **there is no `.csproj`/`.sln` ready yet**. Steps 4–5
+> create the real .NET structure. Once the template ships ready-made projects, steps 4–5
+> will become just "rename".
 
-### 1. Criar o repositório do produto a partir do template
+### 1. Create the product repository from the template
 
-Copie **só** o conteúdo de `template-backend/` para um repositório novo (ele já traz
+Copy **only** the contents of `template-backend/` into a new repository (it already ships
 `.claude/commands/`, `.devcontainer/`, `.vscode/`, `src/`, `test/`, `.github/`):
 
 ```bash
-# defina o nome do produto (sem espaços; usado em pastas e namespaces)
+# set the product name (no spaces; used in folders and namespaces)
 PRODUCT=Acme
 
-# clone o framework e copie o gabarito para a pasta do novo produto
+# clone the framework and copy the scaffold into the new product's folder
 git clone https://github.com/thalleslima8/limaj-framework.git
 cp -r limaj-framework/template-backend "$PRODUCT"
 cd "$PRODUCT"
 
-# inicialize o repo do produto do zero (sem o histórico do framework)
+# initialize the product's repo from scratch (without the framework's history)
 rm -rf .git
 git init -b main
 ```
 
-### 2. Renomear `Template` → nome do produto
+### 2. Rename `Template` → the product name
 
-Troca em massa de pastas, arquivos e conteúdo. Trata **as duas caixas**: `Template`
-(namespaces, projetos) → `Acme`, e `template` minúsculo (rede/volumes/container_name do
-Docker, database name) → `acme` — senão dois produtos colidiriam na mesma rede/volume
-Docker. Rode na raiz do repo do produto:
+Bulk-rename folders, files, and content. Handles **both cases**: `Template`
+(namespaces, projects) → `Acme`, and lowercase `template` (Docker network/volumes/
+container_name, database name) → `acme` — otherwise two products would collide on
+the same Docker network/volume. Run it at the root of the product's repo:
 
 ```bash
-PRODUCT=Acme                                          # o mesmo nome do passo 1
+PRODUCT=Acme                                          # same name as step 1
 PRODUCT_LC=$(echo "$PRODUCT" | tr '[:upper:]' '[:lower:]')
 
-# 2a. conteúdo dos arquivos (namespaces, identificadores Docker, paths em scripts/configs)
+# 2a. file contents (namespaces, Docker identifiers, paths in scripts/configs)
 grep -rl --binary-files=without-match -i "template" . \
   | grep -v '/.git/' \
   | xargs -r sed -i -e "s/Template/$PRODUCT/g" -e "s/template/$PRODUCT_LC/g"
 
-# 2b. nomes de pastas e arquivos (de baixo para cima: filhos antes dos pais)
+# 2b. folder and file names (bottom-up: children before parents)
 find . -depth -iname '*template*' -not -path './.git/*' | while read -r p; do
   newbase=$(basename "$p" | sed -e "s/Template/$PRODUCT/g" -e "s/template/$PRODUCT_LC/g")
   mv "$p" "$(dirname "$p")/$newbase"
 done
 ```
 
-Confira que não sobrou nada (deve retornar vazio):
+Check nothing is left behind (should return empty):
 
 ```bash
 grep -rln -i "template" . | grep -v '/.git/'
 ```
 
-### 3. Escolher o stack do Dev Container
+### 3. Choose the Dev Container stack
 
-Edite o stack do ambiente — **sem reescrever o container**. Detalhes e tabelas no
-guia do devcontainer ([`.devcontainer/README.md`](template-backend/.devcontainer/README.md)
-no produto; seção "Trocar de stack"). Resumo:
+Edit the environment stack — **without rewriting the container**. Details and tables in
+the [devcontainer guide](template-backend/.devcontainer/README.md) (in the product; section
+"Switching stacks"). Summary:
 
-| Decisão | Onde mexer |
+| Decision | Where to change it |
 |---|---|
-| Banco SQL Server (default) ↔ PostgreSQL | `dockerComposeFile` em `.devcontainer/devcontainer.json` (troque `compose.sqlserver.yml` por `compose.postgres.yml`) + `DB_ENGINE` e build args em `.devcontainer/docker-compose.yml` |
-| Backend Functions (default) ↔ API Kestrel | `BACKEND_KIND` em `.devcontainer/docker-compose.yml` |
-| Storage Azure (Azurite) | inclua/remova `compose.azurite.yml` + `USE_AZURITE` |
+| SQL Server database (default) ↔ PostgreSQL | `dockerComposeFile` in `.devcontainer/devcontainer.json` (swap `compose.sqlserver.yml` for `compose.postgres.yml`) + `DB_ENGINE` and build args in `.devcontainer/docker-compose.yml` |
+| Functions backend (default) ↔ Kestrel API | `BACKEND_KIND` in `.devcontainer/docker-compose.yml` |
+| Azure Storage (Azurite) | include/remove `compose.azurite.yml` + `USE_AZURITE` |
 | Frontend (Node + Vite) | `USE_FRONTEND` + `INSTALL_NODE` |
 
-Para uma **API + PostgreSQL sem frontend**, por exemplo: use `compose.postgres.yml`,
+For an **API + PostgreSQL with no frontend**, for example: use `compose.postgres.yml`,
 `DB_ENGINE=postgres`, `BACKEND_KIND=api`, `USE_AZURITE=false`, `USE_FRONTEND=false`,
-e nos build args `INSTALL_MSSQL=false INSTALL_PSQL=true INSTALL_FUNC=false`.
+and in the build args `INSTALL_MSSQL=false INSTALL_PSQL=true INSTALL_FUNC=false`.
 
-### 4. Criar a solution e os projetos .NET
+### 4. Create the solution and .NET projects
 
-O template ainda não traz `.csproj`/`.sln` — crie-os agora (ajuste à sua escolha do passo 3).
-Exemplo para o stack default (Functions + SQL Server):
+The template doesn't yet ship `.csproj`/`.sln` — create them now (adjust to your choice from step 3).
+Example for the default stack (Functions + SQL Server):
 
 ```bash
 PRODUCT=Acme
 dotnet new sln -n "$PRODUCT"
 
-# referência aos building blocks do framework (ProjectReference local ao clone).
-# Ajuste o caminho ../limaj-framework se você moveu o clone.
+# reference the framework building blocks (local ProjectReference to the clone).
+# Adjust the ../limaj-framework path if you moved the clone.
 FW=../limaj-framework/packages
 
-# crie os projetos reais dentro das pastas já renomeadas em src/
-# (substitua os READMEs placeholder pela estrutura .NET)
-# -> use os templates que fizerem sentido: classlib p/ Domain/Application/Infrastructure,
-#    func p/ Functions (ou webapi se BACKEND_KIND=api).
+# create the real projects inside the folders already renamed under src/
+# (replace the empty .gitkeep folders with the actual .NET structure)
+# -> use whichever templates make sense: classlib for Domain/Application/Infrastructure,
+#    func for Functions (or webapi if BACKEND_KIND=api).
 ```
 
-> Esta etapa depende das suas escolhas e dos templates `dotnet new` instalados. Use o
-> agente **`/arquiteto`** (passo 7) para gerar a estrutura concreta de projetos e as
-> `ProjectReference` corretas para `$FW/Limaj.Framework.*`, respeitando as fronteiras
-> da seção [Fronteiras arquiteturais](#fronteiras-arquiteturais).
+> This step depends on your choices and on the `dotnet new` templates installed. Use the
+> **`/arquiteto`** agent (step 7) to generate the concrete project structure and the
+> correct `ProjectReference`s to `$FW/Limaj.Framework.*`, respecting the boundaries in the
+> [Architectural boundaries](#architectural-boundaries) section.
 
-### 5. Fixar a ferramenta `dotnet-ef` (necessária para migrations no Dev Container)
+### 5. Pin the `dotnet-ef` tool (needed for migrations in the Dev Container)
 
-O `post-create.sh` roda `dotnet tool restore` esperando `dotnet-ef` como **tool local**.
-Crie o manifest uma vez:
+`post-create.sh` runs `dotnet tool restore` expecting `dotnet-ef` as a **local tool**.
+Create the manifest once:
 
 ```bash
-dotnet new tool-manifest          # cria .config/dotnet-tools.json
-dotnet tool install dotnet-ef     # fixa a versão usada pelo time
+dotnet new tool-manifest          # creates .config/dotnet-tools.json
+dotnet tool install dotnet-ef     # pins the version used by the team
 ```
 
-### 6. Abrir no Dev Container
+### 6. Open in the Dev Container
 
 ```bash
 code .
 ```
 
-No VS Code: **Reopen in Container**. O primeiro build baixa a imagem e roda o
-`post-create.sh` (restore, secrets dummy, config local, migrations). Ao terminar, rode
-`claude` no terminal integrado — **sem nenhuma flag de permissão** (a allowlist ampla
-vive só dentro do container; ver [guia do devcontainer](template-backend/.devcontainer/README.md)).
+In VS Code: **Reopen in Container**. The first build downloads the image and runs
+`post-create.sh` (restore, dummy secrets, local config, migrations). Once it's done, run
+`claude` in the integrated terminal — **with no permission flag** (the broad allowlist
+lives only inside the container; see the [devcontainer guide](template-backend/.devcontainer/README.md)).
 
-### 7. Usar os slash commands do Claude
+### 7. Use the Claude slash commands
 
-Os comandos já vêm em `.claude/commands/` do produto — 6 comandos, cada um com uma
-responsabilidade exclusiva (ver detalhamento no [`CLAUDE.md`](CLAUDE.md#prompt--command-surfaces)):
+The commands already ship in the product's `.claude/commands/` — 6 commands, each with an
+exclusive responsibility (see the breakdown in [`CLAUDE.md`](CLAUDE.md#prompt--command-surfaces)):
 
-| Comando | Para quê |
+| Command | Purpose |
 |---|---|
-| `/analyst` | regras funcionais de negócio, edge cases e riscos jurídicos/compliance → rascunho de epic |
-| `/arquiteto` | arquitetura, stack, TDD e segurança/DevSecOps — só produz Markdown |
-| `/flow` | media a discussão entre `/arquiteto` e `/analyst` até consenso; formaliza o epic em `docs/epics/` |
-| `/spike` | único agente que altera código de produto — investiga, implementa, corrige bugs e revisa |
-| `/qa` | testa o app (Playwright MCP, se houver `web/`) de forma independente, orientado por epics/docs/código |
-| `/infra` | manter scripts, devcontainer, tooling e o próprio `.claude/` |
+| `/analyst` | functional business rules, edge cases, and legal/compliance risks → epic draft |
+| `/arquiteto` | architecture, stack, TDD, and security/DevSecOps — Markdown output only |
+| `/flow` | mediates the discussion between `/arquiteto` and `/analyst` until consensus; formalizes the epic in `docs/epics/` |
+| `/spike` | the only agent that changes product code — investigates, implements, fixes bugs, and reviews |
+| `/qa` | tests the app (Playwright MCP, if `web/` exists) independently, oriented by epics/docs/code |
+| `/infra` | maintains scripts, devcontainer, tooling, and `.claude/` itself |
 
-A gestão de trabalho é feita em `docs/epics/` (não em um board externo) — ver
-[`docs/template-usage.md`](docs/template-usage.md) para o ciclo completo de um epic.
+Task management happens in `docs/epics/` (not an external board) — see
+[`docs/template-usage.md`](docs/template-usage.md) for the full epic lifecycle.
 
-### 8. Validar e fazer o primeiro commit
+### 8. Validate and make the first commit
 
 ```bash
-dotnet build                       # build da solution do produto
-dotnet test                        # quando houver projetos de teste
-git add -A && git commit -m "chore: scaffold inicial a partir do limaj-framework"
+dotnet build                       # build the product's solution
+dotnet test                        # once test projects exist
+git add -A && git commit -m "chore: initial scaffold from limaj-framework"
 
-# (opcional) publicar no GitHub
+# (optional) publish to GitHub
 gh repo create "$PRODUCT" --private --source=. --push
 ```
 
-## Fronteiras arquiteturais
+## Architectural boundaries
 
-Direção de dependência permitida (não quebrar):
+Allowed dependency direction (must not be broken):
 
-1. `Abstractions` → sem dependências internas.
-2. `Application` → apenas `Abstractions`.
+1. `Abstractions` → no internal dependencies.
+2. `Application` → `Abstractions` only.
 3. `Persistence.EFCore` → `Abstractions`.
-4. `Web` (ou `Api`) → `Abstractions` + stack web/functions.
+4. `Web` (or `Api`) → `Abstractions` + web/functions stack.
 
-`Application` nunca referencia persistência concreta, identidade do host ou
-infraestrutura. Se precisar de implementação concreta, defina o contrato em
-`Abstractions` e ponha o adapter na camada de infraestrutura.
+`Application` never references concrete persistence, host identity, or
+infrastructure. If a concrete implementation is needed, define the contract in
+`Abstractions` and put the adapter in the infrastructure layer.
 
-Building blocks a reaproveitar (não reinventar): `Result`/`Error` para fluxo de retorno,
-contratos de persistência para os services, e o pipeline HTTP genérico (`RequestRunner`)
-para endpoints. Ver [CLAUDE.md](CLAUDE.md) para o catálogo completo de padrões.
+Building blocks to reuse (not reinvent): `Result`/`Error` for the return flow,
+persistence contracts for the services, and the generic HTTP pipeline (`RequestRunner`)
+for endpoints. See [CLAUDE.md](CLAUDE.md) for the full pattern catalog.
 
-## Manter os comandos em sincronia (só ao trabalhar NESTE repo)
+## Keeping the commands in sync (only when working on THIS repo)
 
-A cópia canônica dos comandos é `template-backend/.claude/commands/` (é o que viaja para
-cada SaaS). A raiz do framework tem um espelho para os comandos ficarem ativos ao abrir o
-limaj. Após editar a canônica:
+The canonical copy of the commands is `template-backend/.claude/commands/` (that's what
+travels to each SaaS). The framework root has a mirror so the commands stay active when
+opening limaj itself. After editing the canonical copy:
 
 ```bash
-bash template-backend/scripts/sync-commands.sh        # espelha template → raiz
-bash template-backend/scripts/sync-commands.sh --check # só verifica drift (CI)
+bash template-backend/scripts/sync-commands.sh        # mirror template → root
+bash template-backend/scripts/sync-commands.sh --check # only check for drift (CI)
 ```
 
-## Validar o framework em si
+## Validating the framework itself
 
 ```bash
 dotnet build Limaj.Framework.sln
 ```
 
-## Publicação dos pacotes (`Limaj.Framework.*`)
+## Publishing the packages (`Limaj.Framework.*`)
 
-Os 4 pacotes (`Abstractions`, `Application`, `Persistence.EFCore`, `Web`) sobem em
-lockstep (mesma versão, uma tag por release) para o feed **GitHub Packages** deste
-repositório, via [`.github/workflows/publish-packages.yml`](.github/workflows/publish-packages.yml).
-Decisões completas em
+The 4 packages (`Abstractions`, `Application`, `Persistence.EFCore`, `Web`) are published in
+lockstep (same version, one tag per release) to this repository's **GitHub Packages**
+feed, via [`.github/workflows/publish-packages.yml`](.github/workflows/publish-packages.yml).
+Full decisions in
 [`docs/epics/finalizados/nuget-package-publishing-pipeline.md`](docs/epics/finalizados/nuget-package-publishing-pipeline.md).
 
-### Pré-release (automático)
+### Pre-release (automatic)
 
-Todo push em `main` que passa por `restore → build → test` gera e publica um
-pacote pré-release (`X.Y.Z-alpha.0.<altura>+sha.<commit-curto>`) — sem promessa de
-estabilidade, só feedback contínuo rastreável até o commit. Se `test` falhar, nada é
-publicado.
+Every push to `main` that passes `restore → build → test` generates and publishes a
+pre-release package (`X.Y.Z-alpha.0.<height>+sha.<short-commit>`) — no promise of
+stability, just continuous feedback traceable back to the commit. If `test` fails, nothing
+is published.
 
-### Release estável (corte manual, sem gate formal)
+### Stable release (manual cut, no formal gate)
 
-Não há automação nem checklist obrigatório para decidir "quando" cortar uma tag —
-fica a critério de quem está cortando (DA-006). O mecanismo:
+There's no automation or mandatory checklist for deciding "when" to cut a tag —
+it's up to whoever is cutting it (DA-006). The mechanism:
 
 ```bash
 git tag -a v1.2.0 -m "Release v1.2.0"
 git push origin v1.2.0
 ```
 
-O push da tag (padrão `vX.Y.Z`) dispara o mesmo pipeline; como o MinVer resolve a
-versão exatamente na tag, o pacote sai sem sufixo de pré-release (`1.2.0`, não
-`1.2.0-alpha...`).
+Pushing the tag (`vX.Y.Z` pattern) triggers the same pipeline; since MinVer resolves the
+version exactly at the tag, the package comes out without a pre-release suffix (`1.2.0`,
+not `1.2.0-alpha...`).
 
-### Consumir os pacotes em outro repositório
+### Consuming the packages from another repository
 
-#### 1. Autenticar no feed
+#### 1. Authenticate against the feed
 
-GitHub Packages exige autenticação também para leitura. No repositório consumidor
-(o produto que vai referenciar `Limaj.Framework.*`, **não** este repo), crie um PAT
-fine-grained com escopo único `read:packages` e configure:
+GitHub Packages requires authentication even for reads. In the consumer repository
+(the product that will reference `Limaj.Framework.*`, **not** this repo), create a
+fine-grained PAT scoped to `read:packages` only and configure:
 
 ```xml
-<!-- nuget.config do produto consumidor -->
+<!-- nuget.config of the consumer product -->
 <configuration>
   <packageSources>
     <add key="limaj-framework" value="https://nuget.pkg.github.com/limajsolutions/index.json" />
   </packageSources>
   <packageSourceCredentials>
     <limaj-framework>
-      <add key="Username" value="SEU_USUARIO_GITHUB" />
+      <add key="Username" value="YOUR_GITHUB_USERNAME" />
       <add key="ClearTextPassword" value="%LIMAJ_FRAMEWORK_PAT%" />
     </limaj-framework>
   </packageSourceCredentials>
 </configuration>
 ```
 
-Nunca commitar o PAT em texto plano — usar variável de ambiente (`LIMAJ_FRAMEWORK_PAT`
-acima, resolvida pelo NuGet no `dotnet restore`) ou secret do CI do produto consumidor.
+Never commit the PAT in plain text — use an environment variable (`LIMAJ_FRAMEWORK_PAT`
+above, resolved by NuGet during `dotnet restore`) or a CI secret in the consumer product.
 
-#### 2. Escolher a versão
+#### 2. Choose a version
 
-Modelo de consumo é **versão fixada, upgrade deliberado** (DA-003) — não há range
-flutuante nem auto-update. Duas opções de versão para referenciar:
+The consumption model is **pinned version, deliberate upgrade** (DA-003) — no floating
+range or auto-update. Two version options to reference:
 
-- **Estável** (`X.Y.Z`, ex. `1.2.0`) — existe só depois que alguém cortar a tag
-  correspondente (ver "Release estável" acima). É o que um produto em produção deve
-  usar.
-- **Pré-release** (`X.Y.Z-alpha.0.<altura>+sha.<commit>`, ex.
-  `1.2.0-alpha.0.4+sha.a1b2c3d`) — publicada a cada push em `main`; útil só para
-  testar uma mudança recente antes de existir tag estável, nunca para produção. Veja
-  as versões disponíveis (estáveis e pré-release) na aba **Packages** deste
-  repositório em `https://github.com/limajsolutions/limaj-framework/packages`.
+- **Stable** (`X.Y.Z`, e.g. `1.2.0`) — only exists once someone cuts the corresponding
+  tag (see "Stable release" above). This is what a production product should use.
+- **Pre-release** (`X.Y.Z-alpha.0.<height>+sha.<commit>`, e.g.
+  `1.2.0-alpha.0.4+sha.a1b2c3d`) — published on every push to `main`; only useful for
+  testing a recent change before a stable tag exists, never for production. See the
+  available versions (stable and pre-release) under the **Packages** tab of this
+  repository at `https://github.com/limajsolutions/limaj-framework/packages`.
 
-#### 3. Referenciar os pacotes no projeto
+#### 3. Reference the packages in the project
 
-Cada pacote corresponde a uma camada — referencie só o(s) que o seu projeto usa,
-respeitando a mesma direção de dependência descrita em
-[Fronteiras arquiteturais](#fronteiras-arquiteturais) (ex.: um projeto `Application`
-do produto referencia `Limaj.Framework.Application`, não `Limaj.Framework.Web`):
+Each package corresponds to a layer — reference only the one(s) your project uses,
+respecting the same dependency direction described in
+[Architectural boundaries](#architectural-boundaries) (e.g., a product's `Application`
+project references `Limaj.Framework.Application`, not `Limaj.Framework.Web`):
 
 ```bash
-# projeto de aplicação/domínio do produto
+# product's application/domain project
 dotnet add package Limaj.Framework.Abstractions --version 1.2.0 --source limaj-framework
 dotnet add package Limaj.Framework.Application --version 1.2.0 --source limaj-framework
 
-# projeto de persistência (EF Core) do produto
+# product's persistence (EF Core) project
 dotnet add package Limaj.Framework.Persistence.EFCore --version 1.2.0 --source limaj-framework
 
-# projeto de host HTTP (Azure Functions isolated worker ou Minimal API) do produto
+# product's HTTP host project (Azure Functions isolated worker or Minimal API)
 dotnet add package Limaj.Framework.Web --version 1.2.0 --source limaj-framework
 ```
 
-Equivalente direto no `.csproj`, se preferir editar manualmente em vez do `dotnet add`:
+Direct equivalent in `.csproj`, if you prefer editing manually instead of `dotnet add`:
 
 ```xml
 <ItemGroup>
@@ -298,29 +297,29 @@ Equivalente direto no `.csproj`, se preferir editar manualmente em vez do `dotne
 </ItemGroup>
 ```
 
-Como os 4 pacotes sobem em lockstep (DA-002), sempre referencie **o mesmo número de
-versão** em todos os projetos do produto que consomem `Limaj.Framework.*` — não
-existe hoje um cenário suportado de misturar versões diferentes entre eles.
+Since the 4 packages ship in lockstep (DA-002), always reference **the same version
+number** across every project of the product that consumes `Limaj.Framework.*` — there is
+no supported scenario today for mixing different versions between them.
 
-### Incidente: versão ruim publicada
+### Incident: bad version published
 
-1. Publicar imediatamente a versão corrigida (nova tag `vX.Y.Z+1`) — não sobrescrever
-   a versão ruim, o SemVer não permite reuso do mesmo número.
-2. Remover a versão ruim do feed: página do pacote em
-   `https://github.com/orgs/limajsolutions/packages` (ou do usuário, se o pacote
-   estiver sob conta pessoal) → versão específica → **Delete version** (precisa de
-   permissão de admin no pacote). Diferente do `nuget.org`, GitHub Packages permite
-   deleção real, não só "unlist".
-3. Avisar quem consome o pacote (times donos dos produtos) para atualizar a
-   referência para a versão corrigida.
+1. Immediately publish the fixed version (new tag `vX.Y.Z+1`) — never overwrite
+   the bad version, SemVer doesn't allow reusing the same number.
+2. Remove the bad version from the feed: the package's page at
+   `https://github.com/orgs/limajsolutions/packages` (or the user's, if the package is
+   under a personal account) → the specific version → **Delete version** (requires
+   admin permission on the package). Unlike `nuget.org`, GitHub Packages allows real
+   deletion, not just "unlisting".
+3. Notify package consumers (the teams owning the products) to update their
+   reference to the fixed version.
 
-### Feed público (`nuget.org`)
+### Public feed (`nuget.org`)
 
-Fora de escopo por ora — só considerar se e quando houver demanda real de um
-consumidor externo ao time (ver DA-001).
+Out of scope for now — only consider it if and when there's real demand from a
+consumer outside the team (see DA-001).
 
 ## Guardrails
 
-- Não introduzir código de domínio específico dentro do framework.
-- Não adicionar seed de dados de produto no framework base.
-- Se precisar de implementação concreta, criar contrato em abstrações e adapter na camada de infraestrutura.
+- Do not introduce product-specific domain code inside the framework.
+- Do not add product seed data to the base framework.
+- If a concrete implementation is needed, create a contract in the abstractions and an adapter in the infrastructure layer.

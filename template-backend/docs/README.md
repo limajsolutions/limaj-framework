@@ -1,54 +1,56 @@
-# {Produto} — Documentação
+# {Product} — Documentation
 
-Este índice aponta para a documentação funcional e técnica alinhada ao código atual.
-Ao copiar `template-backend/` para um produto novo, preencha as seções abaixo — o
-esqueleto de pastas (`docs/epics/{backlog,em-andamento,finalizados}/`) já vem pronto.
+This index points to the functional and technical documentation aligned with the
+current code. When copying `template-backend/` into a new product, fill in the
+sections below — the folder skeleton (`docs/epics/{backlog,em-andamento,finalizados}/`)
+is already in place.
 
-## Índice
+## Index
 
-- [Introdução](./introduction.md) — *(criar)* visão geral do produto e do problema que resolve
-- [Glossário](./glossary.md) — *(criar)* termos de domínio
-- [Regras de Negócio](./business-rules.md) — *(criar)* mantido pelo `/analyst`
-- Documentação técnica/arquitetural — mantida pelo `/arquiteto`, um `.md` por decisão relevante ou área
+- [Introduction](./introduction.md) — *(to create)* product overview and the problem it solves
+- [Glossary](./glossary.md) — *(to create)* domain terms
+- [Business Rules](./business-rules.md) — *(to create)* maintained by `/analyst`
+- Technical/architectural documentation — maintained by `/arquiteto`, one `.md` per relevant decision or area
 
-## Gerenciamento de Epics — `docs/epics/`
+## Epic management — `docs/epics/`
 
-`docs/epics/` é o sistema de gestão de tarefas do produto — substitui um board externo
-(GitHub Projects, Jira, etc.). Cada epic é um `.md` com checkboxes, criado a partir do
-consenso entre `/analyst` e `/arquiteto` mediado pelo `/flow`, e implementado pelo `/spike`.
+`docs/epics/` is the product's task-management system — it replaces an external
+board (GitHub Projects, Jira, etc.). Each epic is a `.md` with checkboxes, created
+from consensus between `/analyst` and `/arquiteto` mediated by `/flow`, and
+implemented by `/spike`.
 
-**Fluxo de pastas:** `backlog/` (formalizado, implementação não iniciada) → `em-andamento/`
-(implementação em curso) → `finalizados/` (fases implementadas).
+**Folder flow:** `backlog/` (formalized, implementation not started) → `em-andamento/`
+(implementation in progress) → `finalizados/` (implemented phases).
 
-**Convenções obrigatórias** (replicadas do `CLAUDE.md` do produto — mantenha os dois em sincronia):
-- `- [ ]` = pendente; `- [x]` = concluído
-- Marcar `[x]` ao concluir etapa **antes** do commit
-- Atualizar `Última revisão: YYYY-MM-DD` ao modificar
-- Novo epic: `/flow` cria `docs/epics/backlog/{slug}.md` (sem entrada neste índice ainda)
-- Ao iniciar a implementação, o `/spike` move de `backlog/` para `em-andamento/` e adiciona a
-  linha correspondente abaixo, em "Epics em andamento"
-- Ao concluir a última fase, o `/spike` move de `em-andamento/` para `finalizados/` e atualiza
-  a linha correspondente para "Epics concluídos"
-- **Mover para `finalizados/` é bookkeeping de implementação, não aprovação de negócio** —
-  o sign-off funcional continua sendo decisão exclusiva do usuário
+**Mandatory conventions** (mirrored from the product's `CLAUDE.md` — keep both in sync):
+- `- [ ]` = pending; `- [x]` = done
+- Mark `[x]` when a step is completed **before** the commit
+- Update `Última revisão: YYYY-MM-DD` whenever the file changes
+- New epic: `/flow` creates `docs/epics/backlog/{slug}.md` (no entry in this index yet)
+- When implementation starts, `/spike` moves it from `backlog/` to `em-andamento/` and adds
+  the corresponding line below, under "Epics in progress"
+- When the last phase is completed, `/spike` moves it from `em-andamento/` to `finalizados/`
+  and updates the corresponding line to "Epics completed"
+- **Moving to `finalizados/` is implementation bookkeeping, not business approval** —
+  functional sign-off remains the user's exclusive decision
 
 ## Backlog
 
-Epics formalizados via `/flow` mas com implementação ainda não iniciada — ver `docs/epics/backlog/`.
-Sem entrada aqui até serem movidos para "Epics em andamento".
+Epics formalized via `/flow` but whose implementation has not started yet — see `docs/epics/backlog/`.
+No entry here until they are moved to "Epics in progress".
 
-*(nenhum epic em backlog no momento)*
+*(no epics in the backlog at the moment)*
 
-## Epics em andamento
+## Epics in progress
 
-*(nenhum epic em andamento no momento)*
+*(no epics in progress at the moment)*
 
-## Epics concluídos
+## Epics completed
 
-*(nenhum epic concluído no momento)*
+*(no epics completed at the moment)*
 
 ## Roadmap
 
-O roadmap é mantido nos documentos de epic em `docs/epics/`. Cada arquivo contém motivação,
-decisões arquiteturais (`DA-###`), etapas com checkboxes e critérios de aceite. Esta
-documentação descreve estado funcional implementado e contratos atuais.
+The roadmap is maintained in the epic documents under `docs/epics/`. Each file contains
+motivation, architectural decisions (`DA-###`), phases with checkboxes, and acceptance
+criteria. This documentation describes implemented functional state and current contracts.

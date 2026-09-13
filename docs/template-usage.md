@@ -1,65 +1,64 @@
-# Uso do template-backend
+# Using template-backend
 
-Guia de como consumir e evoluir `template-backend/` — o gabarito copiado para iniciar um
-novo produto SaaS (ver passo a passo completo no [README da raiz](../README.md)).
+Guide on how to consume and evolve `template-backend/` — the scaffold copied to start
+a new SaaS product (see the full step-by-step in the [root README](../README.md)).
 
-## Slash commands do produto
+## Product slash commands
 
-`template-backend/.claude/commands/` traz 6 comandos, cada um com responsabilidade
-exclusiva e não sobreposta:
+`template-backend/.claude/commands/` ships 6 commands, each with an exclusive,
+non-overlapping responsibility:
 
-| Comando | Papel |
+| Command | Role |
 |---|---|
-| `/analyst` | Regras funcionais de negócio, edge cases e riscos jurídicos/compliance de uma proposta |
-| `/arquiteto` | Desenho técnico, stack, TDD, segurança/DevSecOps — só produz Markdown |
-| `/flow` | Media a discussão entre `/arquiteto` e `/analyst` até consenso; formaliza o epic |
-| `/spike` | Único agente que altera código de produto — investiga, implementa, corrige bugs, revisa |
-| `/qa` | Execução independente de testes, orientada por epics/documentação/código |
-| `/infra` | Automação, ambiente de dev local e manutenção de `.claude/` |
+| `/analyst` | Functional business rules, edge cases, and legal/compliance risks of a proposal |
+| `/arquiteto` | Technical design, stack, TDD, security/DevSecOps — Markdown-only output |
+| `/flow` | Mediates the discussion between `/arquiteto` and `/analyst` until consensus; formalizes the epic |
+| `/spike` | The only agent that changes product code — investigates, implements, fixes bugs, reviews |
+| `/qa` | Independent test execution, oriented by epics/documentation/code |
+| `/infra` | Automation, local dev environment, and maintenance of `.claude/` |
 
-Ver a descrição completa de cada papel no [`CLAUDE.md`](../CLAUDE.md) da raiz (seção
-"Prompt / command surfaces") e o conteúdo de cada arquivo em `template-backend/.claude/commands/`.
+See the full description of each role in the root [`CLAUDE.md`](../CLAUDE.md) (section
+"Prompt / command surfaces") and the content of each file under `template-backend/.claude/commands/`.
 
-## Gestão de trabalho: epics em `docs/epics/`
+## Task management: epics in `docs/epics/`
 
-O produto gerado a partir do template **não usa um board externo** (GitHub Projects, Jira)
-como sistema de gestão de tarefas — usa `docs/epics/`, versionado junto com o código.
-`template-backend/docs/` já vem com o esqueleto pronto:
+The product generated from the template **does not use an external board** (GitHub Projects, Jira)
+as its task-management system — it uses `docs/epics/`, versioned alongside the code.
+`template-backend/docs/` already ships with the skeleton in place:
 
 ```
 docs/
-  README.md              # índice funcional/técnico + listas de epics por status
+  README.md              # functional/technical index + epic lists by status
   epics/
-    backlog/              # formalizado pelo /flow, implementação não iniciada
-    em-andamento/          # implementação em curso (movido pelo /spike)
-    finalizados/           # fases implementadas (movido pelo /spike)
+    backlog/               # formalized by /flow, implementation not started
+    em-andamento/          # implementation in progress (moved by /spike)
+    finalizados/           # implemented phases (moved by /spike)
 ```
 
-**Ciclo de um epic:**
+**Lifecycle of an epic:**
 
-1. O desenvolvedor traz uma ideia/dúvida/bug ao `/flow`.
-2. `/flow` colhe pareceres independentes do `/arquiteto` e do `/analyst`, cruza os dois e
-   busca consenso (no máximo 1 rodada de contraposição; conflito real sobe para o
-   desenvolvedor decidir).
-3. Se o ponto vira trabalho concreto, `/flow` escreve `docs/epics/backlog/{slug}.md` —
-   contexto, decisões arquiteturais (`DA-###`), estrutura por camada e checklist de fases
-   com `- [ ]`.
-4. O desenvolvedor aciona o `/spike` apontando o epic. Ao iniciar, o `/spike` move o arquivo
-   para `docs/epics/em-andamento/` e adiciona a entrada em `docs/README.md`.
-5. `/spike` implementa fase a fase, marcando `- [x]` a cada item concluído, sempre com
-   testes e (se houver mudança de schema) migration aplicada no mesmo turno.
-6. Ao concluir a última fase, `/spike` move o epic para `docs/epics/finalizados/` e atualiza
-   `docs/README.md`. Isso é bookkeeping de implementação — **não** é aprovação de negócio;
-   o sign-off funcional continua sendo do usuário.
-7. `/qa` valida o epic concluído usando os critérios de aceite do próprio arquivo como
-   roteiro de teste.
+1. The developer brings an idea/question/bug to `/flow`.
+2. `/flow` gathers independent opinions from `/arquiteto` and `/analyst`, cross-checks them,
+   and seeks consensus (at most 1 round of counter-argument; real conflict escalates to the
+   developer to decide).
+3. If the point becomes concrete work, `/flow` writes `docs/epics/backlog/{slug}.md` —
+   context, architectural decisions (`DA-###`), structure per layer, and a phase checklist
+   with `- [ ]`.
+4. The developer triggers `/spike` pointing at the epic. On start, `/spike` moves the file
+   to `docs/epics/em-andamento/` and adds the entry to `docs/README.md`.
+5. `/spike` implements phase by phase, marking `- [x]` for each completed item, always with
+   tests and (if there's a schema change) the migration applied in the same turn.
+6. When the last phase is done, `/spike` moves the epic to `docs/epics/finalizados/` and updates
+   `docs/README.md`. This is implementation bookkeeping — **not** business approval;
+   functional sign-off remains the user's.
+7. `/qa` validates the completed epic using the file's own acceptance criteria as the test script.
 
-Esta convenção é baseada em uso real em produtos já construídos a partir deste framework —
-ver `bootstrap/allowlist.md` para o que foi importado do repositório legado de origem.
+This convention is based on real usage in products already built from this framework —
+see `bootstrap/allowlist.md` for what was imported from the legacy source repository.
 
-## O que falta documentar aqui
+## What's still missing here
 
-- `template-backend/src/` e `template-backend/test/` ainda são READMEs placeholder — ver
-  nota de honestidade no [README da raiz](../README.md#iniciar-um-novo-saas-a-partir-deste-gabarito-passo-a-passo).
-- Convenções de teste (xUnit/Moq/AutoFixture) ficam a cargo do `/arquiteto` de cada produto,
-  documentadas no `CLAUDE.md` do produto quando a stack for definida.
+- `template-backend/src/` and `template-backend/test/` are still empty (`.gitkeep` only) — see
+  the honesty note in the [root README](../README.md#starting-a-new-saas-from-this-scaffold-step-by-step).
+- Testing conventions (xUnit/Moq/AutoFixture) are up to each product's `/arquiteto`,
+  documented in the product's `CLAUDE.md` once the stack is defined.

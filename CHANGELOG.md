@@ -1,30 +1,30 @@
 # Changelog
 
-Todas as mudanças notáveis deste framework são registradas aqui. Formato baseado em
-[Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/); como este é um framework
-interno sem releases versionadas publicamente, as entradas são organizadas por data.
+All notable changes to this framework are recorded here. Format based on
+[Keep a Changelog](https://keepachangelog.com/en/1.0.0/); since this is an internal
+framework with no publicly versioned releases, entries are organized by date.
 
-## [Não lançado]
+## [Unreleased]
 
-### Alterado
-- **Consolidação dos slash commands de 10 para 6**, cada um com responsabilidade exclusiva e não sobreposta: `/analyst`, `/arquiteto`, `/flow`, `/spike`, `/qa`, `/infra`.
-  - `/spike` absorveu `/dev` (implementação), `/bugfix` (correção) e `/review` (revisão de código) — passa a ser o único agente autorizado a tocar código de produto, operando em modos (investigação, implementação de epic, implementação direta, correção de bug, revisão).
-  - `/flow` deixou de ser o orquestrador do ciclo completo (`analyst → spike → SM → dev → bugfix`) e passou a ser exclusivamente o mediador entre `/arquiteto` e `/analyst`: pareceres independentes, cruzamento, no máximo 1 rodada de contraposição, escalonamento ao usuário se o conflito persistir.
-  - `/infra` passou a ser explicitamente o dono de tudo em `.claude/` (comandos, settings, sincronia canônico→raiz), além de ambiente de dev e automação.
-  - `/qa` passou a ser explicitamente independente, orientado por epics/documentação/código, com autonomia total sobre massa de dados do banco local (nunca produção).
-  - `/arquiteto` ganhou uma seção dedicada de segurança/DevSecOps (AuthN/AuthZ, dados sensíveis, superfície de ataque, CI/CD e supply chain, retenção/privacidade).
-  - `/analyst` ganhou postura de compliance/jurídico (privacidade, retenção de dado, exposição legal) como parte da régua crítica.
-- `/SM`, `/dev`, `/bugfix` e `/review` foram **removidos** de `.claude/commands/` (canônico em `template-backend/`, espelhado na raiz via `sync-commands.sh`).
+### Changed
+- **Consolidated slash commands from 10 to 6**, each with an exclusive, non-overlapping responsibility: `/analyst`, `/arquiteto`, `/flow`, `/spike`, `/qa`, `/infra`.
+  - `/spike` absorbed `/dev` (implementation), `/bugfix` (fixing), and `/review` (code review) — it is now the only agent authorized to touch product code, operating in modes (investigation, epic implementation, direct implementation, bug fix, review).
+  - `/flow` stopped being the orchestrator of the full cycle (`analyst → spike → SM → dev → bugfix`) and became exclusively the mediator between `/arquiteto` and `/analyst`: independent opinions, cross-check, at most 1 round of counter-argument, escalation to the user if the conflict persists.
+  - `/infra` explicitly became the owner of everything under `.claude/` (commands, settings, canonical→root sync), plus the dev environment and automation.
+  - `/qa` explicitly became independent, oriented by epics/documentation/code, with full autonomy over the local database's test data (never production).
+  - `/arquiteto` gained a dedicated security/DevSecOps section (AuthN/AuthZ, sensitive data, attack surface, CI/CD and supply chain, retention/privacy).
+  - `/analyst` gained a compliance/legal posture (privacy, data retention, legal exposure) as part of its critical checklist.
+- `/SM`, `/dev`, `/bugfix`, and `/review` were **removed** from `.claude/commands/` (canonical in `template-backend/`, mirrored at the root via `sync-commands.sh`).
 
-### Adicionado
-- Convenção de gestão de trabalho via `docs/epics/{backlog,em-andamento,finalizados}/` substituindo GitHub Issues/Projects como sistema de tracking — documentada em [`docs/template-usage.md`](docs/template-usage.md) e referenciada no `CLAUDE.md`.
-- `template-backend/docs/README.md` e o esqueleto de pastas `docs/epics/` — já viajam prontos para todo novo produto criado a partir do template.
+### Added
+- Work-management convention via `docs/epics/{backlog,em-andamento,finalizados}/` replacing GitHub Issues/Projects as the tracking system — documented in [`docs/template-usage.md`](docs/template-usage.md) and referenced in `CLAUDE.md`.
+- `template-backend/docs/README.md` and the `docs/epics/` folder skeleton — now ship ready-made with every new product created from the template.
 
-## [2026-06-06] — Dev Container isolado + slash commands iniciais
+## [2026-06-06] — Isolated Dev Container + initial slash commands
 
-### Adicionado
-- Dev Container parametrizável para `template-backend/` (Docker socket não montado, allowlist ampla isolada em `claude-settings.json`), com stacks alternáveis via fragmentos de `docker-compose` (SQL Server, PostgreSQL, Azurite) e `post-create.sh` idempotente.
-- Primeira leva de slash commands em `.claude/commands/`: `/analyst`, `/arquiteto`, `/spike`, `/SM`, `/dev`, `/bugfix`, `/review`, `/qa`, `/infra`, `/flow`.
-- `template-backend/scripts/sync-commands.sh` para manter a cópia canônica (`template-backend/.claude/commands/`) e o espelho da raiz (`.claude/commands/`) em sincronia.
-- CI e quality checks de frontend como placeholders (`echo "TODO: ..."`) em `template-backend/.github/workflows/`.
-- READMEs iniciais descrevendo o propósito de cada componente do template.
+### Added
+- Parametrizable Dev Container for `template-backend/` (Docker socket not mounted, broad allowlist isolated in `claude-settings.json`), with swappable stacks via `docker-compose` fragments (SQL Server, PostgreSQL, Azurite) and an idempotent `post-create.sh`.
+- First batch of slash commands under `.claude/commands/`: `/analyst`, `/arquiteto`, `/spike`, `/SM`, `/dev`, `/bugfix`, `/review`, `/qa`, `/infra`, `/flow`.
+- `template-backend/scripts/sync-commands.sh` to keep the canonical copy (`template-backend/.claude/commands/`) and the root mirror (`.claude/commands/`) in sync.
+- Frontend CI and quality checks as placeholders (`echo "TODO: ..."`) under `template-backend/.github/workflows/`.
+- Initial READMEs describing the purpose of each template component.
