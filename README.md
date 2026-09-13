@@ -201,6 +201,124 @@ bash template-backend/scripts/sync-commands.sh --check # só verifica drift (CI)
 dotnet build Limaj.Framework.sln
 ```
 
+## Publicação dos pacotes (`Limaj.Framework.*`)
+
+Os 4 pacotes (`Abstractions`, `Application`, `Persistence.EFCore`, `Web`) sobem em
+lockstep (mesma versão, uma tag por release) para o feed **GitHub Packages** deste
+repositório, via [`.github/workflows/publish-packages.yml`](.github/workflows/publish-packages.yml).
+Decisões completas em
+[`docs/epics/finalizados/nuget-package-publishing-pipeline.md`](docs/epics/finalizados/nuget-package-publishing-pipeline.md).
+
+### Pré-release (automático)
+
+Todo push em `main` que passa por `restore → build → test` gera e publica um
+pacote pré-release (`X.Y.Z-alpha.0.<altura>+sha.<commit-curto>`) — sem promessa de
+estabilidade, só feedback contínuo rastreável até o commit. Se `test` falhar, nada é
+publicado.
+
+### Release estável (corte manual, sem gate formal)
+
+Não há automação nem checklist obrigatório para decidir "quando" cortar uma tag —
+fica a critério de quem está cortando (DA-006). O mecanismo:
+
+```bash
+git tag -a v1.2.0 -m "Release v1.2.0"
+git push origin v1.2.0
+```
+
+O push da tag (padrão `vX.Y.Z`) dispara o mesmo pipeline; como o MinVer resolve a
+versão exatamente na tag, o pacote sai sem sufixo de pré-release (`1.2.0`, não
+`1.2.0-alpha...`).
+
+### Consumir os pacotes em outro repositório
+
+#### 1. Autenticar no feed
+
+GitHub Packages exige autenticação também para leitura. No repositório consumidor
+(o produto que vai referenciar `Limaj.Framework.*`, **não** este repo), crie um PAT
+fine-grained com escopo único `read:packages` e configure:
+
+```xml
+<!-- nuget.config do produto consumidor -->
+<configuration>
+  <packageSources>
+    <add key="limaj-framework" value="https://nuget.pkg.github.com/limajsolutions/index.json" />
+  </packageSources>
+  <packageSourceCredentials>
+    <limaj-framework>
+      <add key="Username" value="SEU_USUARIO_GITHUB" />
+      <add key="ClearTextPassword" value="%LIMAJ_FRAMEWORK_PAT%" />
+    </limaj-framework>
+  </packageSourceCredentials>
+</configuration>
+```
+
+Nunca commitar o PAT em texto plano — usar variável de ambiente (`LIMAJ_FRAMEWORK_PAT`
+acima, resolvida pelo NuGet no `dotnet restore`) ou secret do CI do produto consumidor.
+
+#### 2. Escolher a versão
+
+Modelo de consumo é **versão fixada, upgrade deliberado** (DA-003) — não há range
+flutuante nem auto-update. Duas opções de versão para referenciar:
+
+- **Estável** (`X.Y.Z`, ex. `1.2.0`) — existe só depois que alguém cortar a tag
+  correspondente (ver "Release estável" acima). É o que um produto em produção deve
+  usar.
+- **Pré-release** (`X.Y.Z-alpha.0.<altura>+sha.<commit>`, ex.
+  `1.2.0-alpha.0.4+sha.a1b2c3d`) — publicada a cada push em `main`; útil só para
+  testar uma mudança recente antes de existir tag estável, nunca para produção. Veja
+  as versões disponíveis (estáveis e pré-release) na aba **Packages** deste
+  repositório em `https://github.com/limajsolutions/limaj-framework/packages`.
+
+#### 3. Referenciar os pacotes no projeto
+
+Cada pacote corresponde a uma camada — referencie só o(s) que o seu projeto usa,
+respeitando a mesma direção de dependência descrita em
+[Fronteiras arquiteturais](#fronteiras-arquiteturais) (ex.: um projeto `Application`
+do produto referencia `Limaj.Framework.Application`, não `Limaj.Framework.Web`):
+
+```bash
+# projeto de aplicação/domínio do produto
+dotnet add package Limaj.Framework.Abstractions --version 1.2.0 --source limaj-framework
+dotnet add package Limaj.Framework.Application --version 1.2.0 --source limaj-framework
+
+# projeto de persistência (EF Core) do produto
+dotnet add package Limaj.Framework.Persistence.EFCore --version 1.2.0 --source limaj-framework
+
+# projeto de host HTTP (Azure Functions isolated worker ou Minimal API) do produto
+dotnet add package Limaj.Framework.Web --version 1.2.0 --source limaj-framework
+```
+
+Equivalente direto no `.csproj`, se preferir editar manualmente em vez do `dotnet add`:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="Limaj.Framework.Abstractions" Version="1.2.0" />
+  <PackageReference Include="Limaj.Framework.Application" Version="1.2.0" />
+</ItemGroup>
+```
+
+Como os 4 pacotes sobem em lockstep (DA-002), sempre referencie **o mesmo número de
+versão** em todos os projetos do produto que consomem `Limaj.Framework.*` — não
+existe hoje um cenário suportado de misturar versões diferentes entre eles.
+
+### Incidente: versão ruim publicada
+
+1. Publicar imediatamente a versão corrigida (nova tag `vX.Y.Z+1`) — não sobrescrever
+   a versão ruim, o SemVer não permite reuso do mesmo número.
+2. Remover a versão ruim do feed: página do pacote em
+   `https://github.com/orgs/limajsolutions/packages` (ou do usuário, se o pacote
+   estiver sob conta pessoal) → versão específica → **Delete version** (precisa de
+   permissão de admin no pacote). Diferente do `nuget.org`, GitHub Packages permite
+   deleção real, não só "unlist".
+3. Avisar quem consome o pacote (times donos dos produtos) para atualizar a
+   referência para a versão corrigida.
+
+### Feed público (`nuget.org`)
+
+Fora de escopo por ora — só considerar se e quando houver demanda real de um
+consumidor externo ao time (ver DA-001).
+
 ## Guardrails
 
 - Não introduzir código de domínio específico dentro do framework.

@@ -1,15 +1,20 @@
 name: Publish packages
 
-# Publica os 4 pacotes Limaj.Framework.* em GitHub Packages a cada push em main.
+# Publica os 4 pacotes Limaj.Framework.* em GitHub Packages.
 # Pipeline de 5 estagios condicionais: restore -> build -> test -> pack -> push.
 # O estagio test bloqueia pack/push (falha aqui interrompe o job, nada e publicado).
 #
-# NAO disparar em pull_request/pull_request_target: exporia GITHUB_TOKEN com
-# packages:write a codigo rodando a partir de um fork. Ver DA-004 em
-# docs/epics/em-andamento/nuget-package-publishing-pipeline.md.
+# Dois gatilhos, ambos push autenticado (nunca pull_request/pull_request_target -
+# exporia GITHUB_TOKEN com packages:write a codigo rodando a partir de um fork):
+#   - push em main            -> pre-release (MinVer calcula X.Y.Z-<altura>+sha)
+#   - push de tag vX.Y.Z      -> release estavel (MinVer resolve a versao exata da
+#                                 tag, sem sufixo de pre-release), corte manual sem
+#                                 gate formal (DA-006). Ver DA-003 em
+#                                 docs/epics/em-andamento/nuget-package-publishing-pipeline.md.
 on:
   push:
     branches: [main]
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
 
 permissions:
   contents: read

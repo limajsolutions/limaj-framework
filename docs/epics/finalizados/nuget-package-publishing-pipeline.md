@@ -1,6 +1,6 @@
 # Publicação versionada de pacotes Limaj.Framework.* (feed + pipeline)
 
-**Status:** Em andamento
+**Status:** Finalizado (implementação — sign-off funcional é decisão do usuário)
 **Última revisão:** 2026-09-13
 
 ## Contexto
@@ -54,10 +54,12 @@ feed e sequenciamento que resolvem essa objeção sem abandonar a ideia original
 - **DA-004 — Pipeline de 5 estágios, cada um condicional ao anterior.**
   `restore → build → test → pack → push`. O estágio `test` é bloqueante e **não pode ser
   contornado** — ver Relacionado, depende da Fase 2 de
-  `test-foundation-and-persistence-error-fixes.md`. Dispara só em `push` para `main` (nunca em
+  `test-foundation-and-persistence-error-fixes.md`. Dispara em `push` para `main` (pré-release)
+  e em `push` de tag `vX.Y.Z` (release estável, ver DA-006) — nunca em
   `pull_request`/`pull_request_target`, para não expor um token de escrita a um workflow
-  rodando código de fork). `GITHUB_TOKEN` escopado a `packages: write` restrito ao step de
-  publish, nunca ao workflow inteiro. Actions de terceiros pinadas por SHA, não por tag
+  rodando código de fork. `GITHUB_TOKEN` escopado a `packages: write` restrito ao job de
+  publish (unidade mínima de escopo de permissão em GitHub Actions — não existe permissão por
+  step), nunca ao workflow inteiro. Actions de terceiros pinadas por SHA, não por tag
   flutuante.
 
 - **DA-005 — Sequenciamento com outros epics.** Este epic **não pode** chegar à Fase 2
@@ -69,6 +71,14 @@ feed e sequenciamento que resolvem essa objeção sem abandonar a ideia original
      depois de publicado é ordem de magnitude mais caro (nome de pacote é, na prática,
      permanente em qualquer feed) do que antes. Ver DA-005 daquele epic, atualizada em conjunto
      com esta decisão.
+
+- **DA-006 — Gatilho de corte de tag estável: discrição manual, sem gate formal.** Decisão do
+  usuário (não fechada pelo `/arquiteto`/`/analyst`, por ser puramente de processo): não há
+  checklist obrigatório nem aprovação de terceiro antes de alguém cortar uma tag `vX.Y.Z` —
+  fica a critério de quem está cortando. Reabre a possibilidade de revisão futura (ex.: exigir
+  sign-off do `/qa`) se a ausência de gate causar um incidente real; não é auto-execução por
+  convenção de commit (isso reabriria a DA-003, que manteve o corte de tag manual
+  deliberadamente).
 
 ## Estrutura proposta por camada
 
@@ -193,19 +203,24 @@ próprio mecanismo de publicação:
       passar a resolver `X.Y.Z` reais assim que a primeira tag `vX.Y.Z` existir (Fase 3).
 
 ### Fase 3 — Promoção a estável
-- [ ] Definir e documentar o procedimento de corte de tag estável (manual vs. automático por
-      convenção de commit — decisão pendente, ver abaixo)
-- [ ] Definir procedimento de incidente/yank de versão ruim (unlist + nova versão corrigida)
-- [ ] Só considerar feed público (`nuget.org`) se e quando houver demanda real de um consumidor
-      externo ao time
+- [x] Definir e documentar o procedimento de corte de tag estável — DA-006 fechada pelo usuário
+      nesta sessão: discrição manual, sem gate formal. Mecanismo documentado no
+      [README](../../../README.md#publicação-dos-pacotes-limajframework) (`git tag -a vX.Y.Z -m
+      "..." && git push origin vX.Y.Z`); workflow atualizado para também disparar em `push` de
+      tag `v[0-9]+.[0-9]+.[0-9]+` (antes só disparava em `push` para `main`), já que sem esse
+      gatilho adicional cortar uma tag num commit já mergeado não reconstruiria/republicaria o
+      pacote como versão estável — validado localmente (tag local descartável): MinVer resolve
+      a versão exata da tag sem sufixo de pré-release mesmo com `MinVerBuildMetadata` setado
+      (metadata só é anexado quando há altura > 0 acima da tag).
+- [x] Definir procedimento de incidente/yank de versão ruim — documentado no
+      [README](../../../README.md#incidente-versão-ruim-publicada): publicar versão corrigida
+      com nova tag (nunca reusar número), remover a versão ruim via GitHub Packages (deleção
+      real, diferente do "unlist" do `nuget.org` — ver DA-001), avisar consumidores.
+- [x] Só considerar feed público (`nuget.org`) se e quando houver demanda real de um consumidor
+      externo ao time — nenhuma ação necessária agora; decisão registrada no README como
+      lembrete para quando esse gatilho existir.
 
 ## Decisões pendentes
-
-> Decisão pendente: DA-006 — gatilho exato de corte de tag estável: automático por convenção de
-> commit (ex. Conventional Commits + `semantic-release`-like) ou manual (alguém cria a tag
-> quando decide "cortar" uma versão consumível)? Recomendação do `/arquiteto`: pré-release
-> automático a cada merge (já decidido, DA-003) + tag estável manual — mas o gatilho exato de
-> "quando" alguém deveria cortar essa tag não foi decidido, é de processo, não só técnico.
 
 > Decisão pendente: DA-007 — gatilho objetivo de migração de versionamento lockstep para
 > independente por pacote. Proposto: no momento em que existir um primeiro consumidor real
