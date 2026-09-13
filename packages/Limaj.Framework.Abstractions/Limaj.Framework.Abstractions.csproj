@@ -1,4 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Remove="Limaj.Framework.Abstractions.Tests\**\*.cs" />
+    <None Remove="Limaj.Framework.Abstractions.Tests\**\*.cs" />
+  </ItemGroup>
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

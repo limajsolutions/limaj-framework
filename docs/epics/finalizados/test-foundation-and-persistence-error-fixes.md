@@ -1,6 +1,6 @@
 # Fundação de testes, correção do UnitOfWork e extensibilidade de persistência/erro
 
-**Status:** Em andamento
+**Status:** Finalizado (implementação — sign-off funcional é decisão do usuário)
 **Última revisão:** 2026-09-12
 
 ## Contexto
@@ -111,25 +111,37 @@ contratos públicos é o critério, não métrica arbitrária.
 - [x] Teste de caracterização cobrindo transação com `EnableRetryOnFailure` habilitado
 
 ### Fase 2 — Fundação de testes (bloqueante para o epic de publicação, ver Relacionado)
-- [ ] Criar os 4 projetos de teste (um por pacote) + `Limaj.Framework.Architecture.Tests`,
+- [x] Criar os 4 projetos de teste (um por pacote) + `Limaj.Framework.Architecture.Tests`,
       adicionar todos a `Limaj.Framework.sln`
-- [ ] Cobertura de `Result`/`Error`/`ResultExtensions.ToHttpResult` (7 `ErrorType`)
-- [ ] Cobertura da ponte de exceção (`FunctionRunner.RunAsync` + `ExceptionExtensions`, 4 ramos)
-- [ ] Cobertura de `BaseRepository` (soft delete, `includeInactive`, `HardDeleteByIdAsync`)
-- [ ] Cobertura de `UnitOfWork` (commit/rollback)
-- [ ] Teste de arquitetura validando a tabela de dependência entre os 4 pacotes
+- [x] Cobertura de `Result`/`Error`/`ResultExtensions.ToHttpResult` (7 `ErrorType`)
+- [x] Cobertura da ponte de exceção (`FunctionRunner.RunAsync` + `ExceptionExtensions`, 4 ramos)
+- [x] Cobertura de `BaseRepository` (soft delete, `includeInactive`, `HardDeleteByIdAsync`) —
+      **achado fora do escopo original, corrigido nesta sessão com aval explícito do usuário**:
+      `BaseEntityConfiguration<T>.Configure()` nunca chamava `HasQueryFilter(e => e.IsActive)`,
+      então soft delete não excluía nada por padrão e `includeInactive` (`IgnoreQueryFilters()`)
+      era inerte (não havia filtro para ignorar). Corrigido adicionando o `HasQueryFilter`. Como
+      consequência direta dessa correção, `SoftDeleteByIdAsync`/`RestoreByIdAsync` (que
+      consultavam via `Set.Where(...)`, agora sujeito ao filtro) e `HardDeleteByIdAsync`
+      (delegava para o agora-filtrado `GetByIdAsync`, e usava `AsNoTracking()` causando conflito
+      de identidade quando a entidade já estava rastreada no mesmo `DbContext`) também precisaram
+      de ajuste — todos os três agora usam `IgnoreQueryFilters()`, e `HardDeleteByIdAsync` deixou
+      de usar `AsNoTracking()` para permitir resolução de identidade do EF Core. Coberto por 9
+      testes novos em `BaseRepositoryTests`.
+- [x] Cobertura de `UnitOfWork` (commit/rollback) — coberta pelos 3 testes de caracterização da
+      Fase 1 (`UnitOfWorkExecuteInTransactionAsyncTests`)
+- [x] Teste de arquitetura validando a tabela de dependência entre os 4 pacotes
 
 ### Fase 3 — Utilitários de persistência (P1)
-- [ ] `DesignTimeDbContextFactoryBase`
-- [ ] `UseSqlServerWithRetry`
-- [ ] `UseUtcDateTimeConversion`
-- [ ] Testes cobrindo os 3 utilitários
+- [x] `DesignTimeDbContextFactoryBase`
+- [x] `UseSqlServerWithRetry`
+- [x] `UseUtcDateTimeConversion`
+- [x] Testes cobrindo os 3 utilitários
 
 ### Fase 4 — Mecanismo de extensibilidade de erro (P1)
-- [ ] `Error.HttpStatusCode` opcional
-- [ ] `IExceptionToErrorMapper` plugável, resolvido via DI no host
-- [ ] Teste garantindo que `ErrorType` permanece fechado em 7 valores
-- [ ] Teste negativo garantindo que nenhum tipo de erro concreto de domínio de produto é
+- [x] `Error.HttpStatusCode` opcional
+- [x] `IExceptionToErrorMapper` plugável, resolvido via DI no host
+- [x] Teste garantindo que `ErrorType` permanece fechado em 7 valores
+- [x] Teste negativo garantindo que nenhum tipo de erro concreto de domínio de produto é
       referenciado dentro do framework
 
 ## Decisões pendentes

@@ -26,7 +26,23 @@ public static class ResultExtensions
         return MapError(result.Error!);
     }
 
-    private static IResult MapError(Error error) => error.Type switch
+    private static IResult MapError(Error error)
+    {
+        // An explicit HttpStatusCode (set by a host's IExceptionToErrorMapper) always wins over
+        // the ErrorType -> status mapping below, so a product can respond with a status the
+        // closed 7-value ErrorType enum doesn't cover without a framework change.
+        if (error.HttpStatusCode is { } statusCode)
+        {
+            return Results.Problem(
+                title: error.Message,
+                detail: error.Code,
+                statusCode: (int)statusCode);
+        }
+
+        return MapByErrorType(error);
+    }
+
+    private static IResult MapByErrorType(Error error) => error.Type switch
     {
         ErrorType.Validation => Results.ValidationProblem(
             errors: error.Details ?? new Dictionary<string, string[]>(),

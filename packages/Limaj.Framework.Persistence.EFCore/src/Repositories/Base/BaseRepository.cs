@@ -30,17 +30,25 @@ public class BaseRepository<T, TDbContext> : IRepository<T>
         return Task.CompletedTask;
     }
 
+    // Both ignore the soft-delete filter: SoftDeleteByIdAsync must still work when called twice
+    // in a row, and RestoreByIdAsync's entire purpose is to target an already-inactive row that
+    // the filter would otherwise make invisible to this query.
     public Task SoftDeleteByIdAsync(Guid id, CancellationToken cancellationToken) =>
-        Set.Where(entity => entity.Id == id)
+        Set.IgnoreQueryFilters().Where(entity => entity.Id == id)
             .ExecuteUpdateAsync(setters => setters.SetProperty(entity => entity.IsActive, false), cancellationToken);
 
     public Task RestoreByIdAsync(Guid id, CancellationToken cancellationToken) =>
-        Set.Where(entity => entity.Id == id)
+        Set.IgnoreQueryFilters().Where(entity => entity.Id == id)
             .ExecuteUpdateAsync(setters => setters.SetProperty(entity => entity.IsActive, true), cancellationToken);
 
     public async Task HardDeleteByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        var entity = await GetByIdAsync(id, cancellationToken);
+        // Ignores the soft-delete filter (the escape hatch must purge an already-inactive row
+        // too) and does NOT use AsNoTracking: a tracking query lets EF Core's identity resolution
+        // return an instance already tracked in this context (e.g. just inserted/updated in the
+        // same unit of work) instead of conflicting with it when Remove attaches a second one.
+        var entity = await Set.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
         if (entity is not null)
         {
             Set.Remove(entity);

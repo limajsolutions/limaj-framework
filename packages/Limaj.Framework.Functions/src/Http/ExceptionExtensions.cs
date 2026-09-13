@@ -8,9 +8,15 @@ namespace Limaj.Framework.Functions.Http;
 public static class ExceptionExtensions
 {
     /// <summary>
-    /// Maps known framework exceptions to structured HTTP responses.
+    /// Maps known framework exceptions to structured HTTP responses. Exceptions not covered by
+    /// the standard bridge are offered to <paramref name="exceptionToErrorMapper"/> (if the host
+    /// registered one) before falling back to a generic Unexpected/500 response.
     /// </summary>
-    public static IResult ToHttpResult(this Exception ex, ILogger logger, string functionName)
+    public static IResult ToHttpResult(
+        this Exception ex,
+        ILogger logger,
+        string functionName,
+        IExceptionToErrorMapper? exceptionToErrorMapper = null)
     {
         switch (ex)
         {
@@ -37,6 +43,13 @@ public static class ExceptionExtensions
                     .ToHttpResult(_ => Results.Conflict());
 
             default:
+                var mappedError = exceptionToErrorMapper?.Map(ex);
+                if (mappedError is not null)
+                {
+                    logger.LogWarning(ex, "Mapped error in {Function}: {Code}", functionName, mappedError.Code);
+                    return Result<object>.Fail(mappedError).ToHttpResult(_ => Results.Problem());
+                }
+
                 logger.LogError(ex, "Unhandled error in {Function}", functionName);
                 return Result<object>
                     .Unexpected(ex.Source ?? "unknown", ex.Message)

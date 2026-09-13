@@ -13,5 +13,9 @@ public abstract class BaseEntityConfiguration<T> : IEntityTypeConfiguration<T>
         builder.Property(entity => entity.IsActive).IsRequired();
         builder.Property(entity => entity.CreatedAt).IsRequired();
         builder.Property(entity => entity.UpdatedAt).IsRequired();
+
+        // Soft delete: reads exclude IsActive=false by default. BaseRepository's includeInactive
+        // opt-in works by calling IgnoreQueryFilters(), which depends on this filter existing.
+        builder.HasQueryFilter(entity => entity.IsActive);
     }
 }
