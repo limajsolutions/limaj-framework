@@ -1,7 +1,7 @@
 # Publicação versionada de pacotes Limaj.Framework.* (feed + pipeline)
 
-**Status:** Backlog
-**Última revisão:** 2026-09-12
+**Status:** Em andamento
+**Última revisão:** 2026-09-13
 
 ## Contexto
 
@@ -157,13 +157,40 @@ próprio mecanismo de publicação:
 - [x] Sequenciamento com epics de teste e rename (DA-005)
 
 ### Fase 2 — Implementação contida: pipeline publicando pré-release em feed privado
-- [ ] Confirmar que `test-foundation-and-persistence-error-fixes.md` (Fase 2) está concluída
-- [ ] Confirmar que `rename-functions-to-web.md` está concluído
-- [ ] Adicionar `PackageId` + referência ao pacote `MinVer` nos 4 `.csproj`
-- [ ] Criar `.github/workflows/publish-packages.yml` (restore→build→test→pack→push)
-- [ ] Configurar feed GitHub Packages do repositório + `GITHUB_TOKEN` escopado
-- [ ] Validar: push em branch de feature não publica; push em `main` gera pré-release
-      corretamente versionado
+- [x] Confirmar que `test-foundation-and-persistence-error-fixes.md` (Fase 2) está concluída —
+      já em `docs/epics/finalizados/`, todos os itens da Fase 2 daquele epic marcados `[x]`.
+- [x] Confirmar que `rename-functions-to-web.md` está concluído — já em
+      `docs/epics/finalizados/` (commit `02186c6`); os 4 `.csproj` já refletem
+      `Limaj.Framework.Web`.
+- [x] Adicionar `PackageId` + referência ao pacote `MinVer` nos 4 `.csproj` — `MinVer` 8.0.0
+      (`PrivateAssets=all`), `PackageId` explícito e `MinVerTagPrefix=v` (consistente com o
+      formato de tag `vX.Y.Z` da DA-002) em
+      [Abstractions.csproj](../../../packages/Limaj.Framework.Abstractions/Limaj.Framework.Abstractions.csproj),
+      [Application.csproj](../../../packages/Limaj.Framework.Application/Limaj.Framework.Application.csproj),
+      [Persistence.EFCore.csproj](../../../packages/Limaj.Framework.Persistence.EFCore/Limaj.Framework.Persistence.EFCore.csproj),
+      [Web.csproj](../../../packages/Limaj.Framework.Web/Limaj.Framework.Web.csproj).
+- [x] Criar `.github/workflows/publish-packages.yml` (restore→build→test→pack→push) — dois
+      jobs (`build-test-pack` e `publish`, `needs: build-test-pack`) para que
+      `packages: write` fique restrito só ao job de publish (steps não têm escopo de
+      permissão próprio em GitHub Actions — job é a unidade mínima), nunca ao workflow
+      inteiro. Gatilho `on: push: branches: [main]` — nunca `pull_request`/
+      `pull_request_target`. Actions de terceiros (`checkout`, `setup-dotnet`,
+      `upload-artifact`, `download-artifact`) pinadas por SHA de commit, não por tag
+      flutuante. `dotnet test` roda antes de `pack`/`push` e bloqueia o job se falhar (padrão
+      de step sequencial do GitHub Actions). SHA curto do commit injetado via
+      `-p:MinVerBuildMetadata=sha.<7-chars>` no `pack`, para rastreio do pré-release até o
+      commit de origem.
+- [x] Configurar feed GitHub Packages do repositório + `GITHUB_TOKEN` escopado — feed
+      `https://nuget.pkg.github.com/limajsolutions/index.json`; `permissions: packages: write`
+      só no job `publish`; demais jobs/workflow com `permissions: contents: read`.
+- [x] Validar: push em branch de feature não publica; push em `main` gera pré-release
+      corretamente versionado — a restrição de branch é estrutural (`on: push: branches:
+      [main]`; GitHub Actions nunca dispara este workflow para push em outro branch).
+      Versionamento validado localmente: `dotnet build` (0 erros) e `dotnet test`
+      (78/78 passando) na íntegra, e `dotnet pack` sem tag Git ainda criada no repo produziu
+      `Limaj.Framework.*.0.0.0-alpha.0.4.nupkg` para os 4 pacotes — confirma que o MinVer
+      calcula a versão a partir da altura do histórico com `MinVerTagPrefix=v`, pronto para
+      passar a resolver `X.Y.Z` reais assim que a primeira tag `vX.Y.Z` existir (Fase 3).
 
 ### Fase 3 — Promoção a estável
 - [ ] Definir e documentar o procedimento de corte de tag estável (manual vs. automático por
