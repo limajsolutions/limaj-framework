@@ -1,5 +1,7 @@
 # {Product} — Documentation
 
+> The `/analyst`, `/arquiteto`, `/flow`, `/spike`, `/qa`, and `/infra` commands mentioned below come from the `workflow` plugin ([thalleslima8/my-skills](https://github.com/thalleslima8/my-skills)), installed via `/plugin install` — not from a local folder in this repository.
+
 This index points to the functional and technical documentation aligned with the
 current code. When copying `template-backend/` into a new product, fill in the
 sections below — the folder skeleton (`docs/epics/{backlog,em-andamento,finalizados}/`)

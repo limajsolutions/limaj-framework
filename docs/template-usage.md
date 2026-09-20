@@ -5,8 +5,12 @@ a new SaaS product (see the full step-by-step in the [root README](../README.md)
 
 ## Product slash commands
 
-`template-backend/.claude/commands/` ships 6 commands, each with an exclusive,
-non-overlapping responsibility:
+The slash commands are **not** shipped in this repository or in `template-backend/`. They
+come from the `workflow` plugin in [thalleslima8/my-skills](https://github.com/thalleslima8/my-skills),
+installed in each product via `/plugin install workflow@my-skills` (the starting-point
+`.claude/settings.json` + `CLAUDE.md` come from
+[thalleslima8/ai-starter-kit](https://github.com/thalleslima8/ai-starter-kit)). The plugin
+provides 6 commands, each with an exclusive, non-overlapping responsibility:
 
 | Command | Role |
 |---|---|
@@ -17,8 +21,8 @@ non-overlapping responsibility:
 | `/qa` | Independent test execution, oriented by epics/documentation/code |
 | `/infra` | Automation, local dev environment, and maintenance of `.claude/` |
 
-See the full description of each role in the root [`CLAUDE.md`](../CLAUDE.md) (section
-"Prompt / command surfaces") and the content of each file under `template-backend/.claude/commands/`.
+See the full description of each role in the `workflow` plugin's
+[`commands/`](https://github.com/thalleslima8/my-skills/tree/master/plugins/workflow/commands).
 
 ## Task management: epics in `docs/epics/`
 

@@ -139,6 +139,8 @@ fi
 # ─── 4. Allowlist do Claude no container (Claude sem prompts) ───
 # Vive APENAS no container: copiada para o user settings (~/.claude/settings.json),
 # NUNCA mergeada no .claude/settings.json versionado do host.
+# Cobre SOMENTE permissões (allowlist) — sem marketplace, plugins ou commands. Isso vem do
+# .claude/settings.json do projeto (ai-starter-kit + plugin workflow do my-skills), não daqui.
 CLAUDE_ALLOWLIST="$WORKSPACE/.devcontainer/claude-settings.json"
 if [ -f "$CLAUDE_ALLOWLIST" ]; then
   log "Instalando allowlist do Claude em ~/.claude/settings.json..."

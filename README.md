@@ -4,7 +4,11 @@ Reusable base for accelerating the creation of SaaS backends in .NET/Azure Funct
 
 - generic technical building blocks (`packages/Limaj.Framework.*`)
 - a backend project template (`template-backend/`), with an isolated Dev Container for Claude Code
-- Claude Code slash commands (`.claude/commands/`) loaded as specialized sessions
+
+Claude Code commands, agents, and skills do **not** live here — they come from
+[thalleslima8/my-skills](https://github.com/thalleslima8/my-skills) (plugin marketplace), and the
+starting-point `.claude/settings.json` + `CLAUDE.md` for a new project come from
+[thalleslima8/ai-starter-kit](https://github.com/thalleslima8/ai-starter-kit).
 
 ## Repository structure
 
@@ -12,7 +16,7 @@ Reusable base for accelerating the creation of SaaS backends in .NET/Azure Funct
 - `packages/Limaj.Framework.Application`: application layer decoupled from concrete infrastructure.
 - `packages/Limaj.Framework.Persistence.EFCore`: EF Core adapters implementing the abstraction contracts.
 - `packages/Limaj.Framework.Web`: generic HTTP pipeline, host-agnostic (Azure Functions isolated worker or Minimal API — both speak `HttpRequest`/`IResult`).
-- `template-backend/`: scaffold for starting new products — already ships `.claude/commands/`, `docs/epics/{backlog,em-andamento,finalizados}/`, and `docs/README.md`.
+- `template-backend/`: scaffold for starting new products — already ships `.devcontainer/`, `docs/epics/{backlog,em-andamento,finalizados}/`, and `docs/README.md`.
 - `docs/template-usage.md`: how to consume/evolve the template, including the epic-management lifecycle under `docs/epics/`.
 - `Limaj.Framework.sln`: framework solution for building/testing the base packages.
 
@@ -32,14 +36,14 @@ uses the product name **`Acme`** — swap it for `YourSaas` freely.
 ### 1. Create the product repository from the template
 
 Copy **only** the contents of `template-backend/` into a new repository (it already ships
-`.claude/commands/`, `.devcontainer/`, `.vscode/`, `src/`, `test/`, `.github/`):
+`.devcontainer/`, `.vscode/`, `docs/`, `src/`, `test/`, `.github/`):
 
 ```bash
 # set the product name (no spaces; used in folders and namespaces)
 PRODUCT=Acme
 
 # clone the framework and copy the scaffold into the new product's folder
-git clone https://github.com/thalleslima8/limaj-framework.git
+git clone https://github.com/limajsolutions/limaj-framework.git
 cp -r limaj-framework/template-backend "$PRODUCT"
 cd "$PRODUCT"
 
@@ -114,7 +118,7 @@ FW=../limaj-framework/packages
 ```
 
 > This step depends on your choices and on the `dotnet new` templates installed. Use the
-> **`/arquiteto`** agent (step 7) to generate the concrete project structure and the
+> **`/arquiteto`** command (step 8) to generate the concrete project structure and the
 > correct `ProjectReference`s to `$FW/Limaj.Framework.*`, respecting the boundaries in the
 > [Architectural boundaries](#architectural-boundaries) section.
 
@@ -128,7 +132,31 @@ dotnet new tool-manifest          # creates .config/dotnet-tools.json
 dotnet tool install dotnet-ef     # pins the version used by the team
 ```
 
-### 6. Open in the Dev Container
+### 6. Bring in the Claude Code tooling (`ai-starter-kit`)
+
+Commands, agents, and skills are **not** part of `template-backend/`. The starting point for
+any new project is [thalleslima8/ai-starter-kit](https://github.com/thalleslima8/ai-starter-kit):
+a generic `.claude/settings.json` (which references the `my-skills` marketplace) plus a
+`CLAUDE.md` template. Copy both into the product, next to what you copied in step 1:
+
+```bash
+git clone https://github.com/thalleslima8/ai-starter-kit.git ../ai-starter-kit
+cp -r ../ai-starter-kit/.claude .
+cp ../ai-starter-kit/CLAUDE.md .
+```
+
+The kit's `CLAUDE.md` is deliberately stack-agnostic. Open it and:
+
+- fill in every `{preencher}` placeholder (project purpose, code conventions);
+- in the last section ("Stack e camadas específicas do projeto"), paste the limaj-framework
+  stack content the embedded comment asks for. What this repo can supply today is the
+  package layering table and the `IUserIdentityGateway` rule from this repo's
+  [`CLAUDE.md`](CLAUDE.md) ("Architecture: package layering", "Core patterns to reuse") —
+  the security (ownership/BOLA) and migrations (`dotnet ef database update`) guidance the
+  comment mentions is not documented in this repo, so write it in the product;
+- delete the "Template genérico" blockquote and the comment once they are filled in.
+
+### 7. Open in the Dev Container
 
 ```bash
 code .
@@ -137,12 +165,29 @@ code .
 In VS Code: **Reopen in Container**. The first build downloads the image and runs
 `post-create.sh` (restore, dummy secrets, local config, migrations). Once it's done, run
 `claude` in the integrated terminal — **with no permission flag** (the broad allowlist
-lives only inside the container; see the [devcontainer guide](template-backend/.devcontainer/README.md)).
+lives only inside the container and covers permissions only — the marketplace/plugins come
+from the project's `.claude/settings.json` you added in step 6; see the
+[devcontainer guide](template-backend/.devcontainer/README.md)).
 
-### 7. Use the Claude slash commands
+### 8. Install the plugins and use the slash commands
 
-The commands already ship in the product's `.claude/commands/` — 6 commands, each with an
-exclusive responsibility (see the breakdown in [`CLAUDE.md`](CLAUDE.md#prompt--command-surfaces)):
+The commands come from the plugins of
+[thalleslima8/my-skills](https://github.com/thalleslima8/my-skills). In Claude Code (inside
+the Dev Container, in the product's folder):
+
+```
+/plugin marketplace add thalleslima8/my-skills
+/plugin install workflow@my-skills
+/plugin install dotnet@my-skills     # only if the product uses EF Core
+```
+
+The kit's `.claude/settings.json` already declares the marketplace and enables `workflow`, so
+after you trust the project folder Claude Code offers the install by itself — the commands
+above are the manual equivalent (`extraKnownMarketplaces` has no effect before the folder is
+trusted). The kit does **not** enable `dotnet@my-skills`; instead of the command you can add
+`"dotnet@my-skills": true` to `enabledPlugins` in the product's `.claude/settings.json`.
+
+The `workflow` plugin provides 6 commands, each with an exclusive responsibility:
 
 | Command | Purpose |
 |---|---|
@@ -156,7 +201,7 @@ exclusive responsibility (see the breakdown in [`CLAUDE.md`](CLAUDE.md#prompt--c
 Task management happens in `docs/epics/` (not an external board) — see
 [`docs/template-usage.md`](docs/template-usage.md) for the full epic lifecycle.
 
-### 8. Validate and make the first commit
+### 9. Validate and make the first commit
 
 ```bash
 dotnet build                       # build the product's solution
@@ -183,17 +228,6 @@ infrastructure. If a concrete implementation is needed, define the contract in
 Building blocks to reuse (not reinvent): `Result`/`Error` for the return flow,
 persistence contracts for the services, and the generic HTTP pipeline (`RequestRunner`)
 for endpoints. See [CLAUDE.md](CLAUDE.md) for the full pattern catalog.
-
-## Keeping the commands in sync (only when working on THIS repo)
-
-The canonical copy of the commands is `template-backend/.claude/commands/` (that's what
-travels to each SaaS). The framework root has a mirror so the commands stay active when
-opening limaj itself. After editing the canonical copy:
-
-```bash
-bash template-backend/scripts/sync-commands.sh        # mirror template → root
-bash template-backend/scripts/sync-commands.sh --check # only check for drift (CI)
-```
 
 ## Validating the framework itself
 

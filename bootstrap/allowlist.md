@@ -6,14 +6,15 @@
 
 ## Copy now (generic files)
 
-- `.claude/commands/analyst.md`
-- `.claude/commands/spike.md`
-- `.claude/commands/issues.md`
-- `.claude/commands/impl.md`
-- `.claude/commands/bugfix.md`
-- `.claude/commands/review.md`
-- `.claude/commands/infra.md`
-- `.claude/commands/flow.md`
+- *(none pending)*
+
+> **Claude Code commands/agents/skills are no longer imported into this repository.** The
+> original bootstrap copied the legacy `.claude/commands/*.md` files here; they have since
+> been generalized and moved to
+> [thalleslima8/my-skills](https://github.com/thalleslima8/my-skills) (`workflow` plugin),
+> and the generic `.claude/settings.json` + `CLAUDE.md` starting point lives in
+> [thalleslima8/ai-starter-kit](https://github.com/thalleslima8/ai-starter-kit). Do not
+> re-import them here — port improvements to `my-skills` instead.
 
 ## Adapt before copying
 
