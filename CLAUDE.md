@@ -52,11 +52,11 @@ Dependency direction is enforced and must not be broken:
 
 ## AI tooling
 
-Commands, agents e skills de Claude Code não vivem mais neste repositório — vivem em https://github.com/thalleslima8/my-skills, distribuídos como plugin marketplace. O ponto de partida de um projeto novo (`.claude/settings.json` genérico + `CLAUDE.md` template) vem de https://github.com/thalleslima8/ai-starter-kit. Este repositório contribui só com o código (`packages/`) e o scaffold (`template-backend/`).
+Claude Code commands, agents, and skills no longer live in this repository — they live in https://github.com/thalleslima8/my-skills, distributed as a plugin marketplace. The starting point for a new project (a generic `.claude/settings.json` + a `CLAUDE.md` template) comes from https://github.com/thalleslima8/ai-starter-kit. This repository contributes only code (`packages/`) and the scaffold (`template-backend/`).
 
 ## Task management: epics in `docs/`
 
-Products built from this template don't track work in an external board — `docs/epics/{backlog,em-andamento,finalizados}/` (versioned alongside the code) is the task-management system, formalized and driven by the commands of the `workflow` plugin (thalleslima8/my-skills), when installed in the project. The framework repo ships the empty folder scaffold plus a starter `docs/README.md` at `template-backend/docs/` (copied as-is into new products); the convention itself — folder lifecycle, `- [ ]`/`- [x]`, `DA-###` decisions, `Última revisão` — is documented in [docs/template-usage.md](docs/template-usage.md). This repo's own `docs/` only holds that template-usage guidance — there are no product epics here since the framework itself has no product code.
+Products built from this template don't track work in an external board — `docs/epics/{backlog,in-progress,done}/` (versioned alongside the code) is the task-management system, formalized and driven by the commands of the `workflow` plugin (thalleslima8/my-skills), when installed in the project. The framework repo ships the empty folder scaffold plus a starter `docs/README.md` at `template-backend/docs/` (copied as-is into new products); the convention itself — folder lifecycle, `- [ ]`/`- [x]`, `DA-###` decisions, `Última revisão` — is documented in [docs/template-usage.md](docs/template-usage.md). This repo's own `docs/` only holds that template-usage guidance — there are no product epics here since the framework itself has no product code.
 
 ## Dev Container (template-backend)
 

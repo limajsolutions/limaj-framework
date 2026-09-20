@@ -4,7 +4,7 @@
 
 This index points to the functional and technical documentation aligned with the
 current code. When copying `template-backend/` into a new product, fill in the
-sections below — the folder skeleton (`docs/epics/{backlog,em-andamento,finalizados}/`)
+sections below — the folder skeleton (`docs/epics/{backlog,in-progress,done}/`)
 is already in place.
 
 ## Index
@@ -21,19 +21,19 @@ board (GitHub Projects, Jira, etc.). Each epic is a `.md` with checkboxes, creat
 from consensus between `/analyst` and `/arquiteto` mediated by `/flow`, and
 implemented by `/spike`.
 
-**Folder flow:** `backlog/` (formalized, implementation not started) → `em-andamento/`
-(implementation in progress) → `finalizados/` (implemented phases).
+**Folder flow:** `backlog/` (formalized, implementation not started) → `in-progress/`
+(implementation in progress) → `done/` (implemented phases).
 
 **Mandatory conventions** (mirrored from the product's `CLAUDE.md` — keep both in sync):
 - `- [ ]` = pending; `- [x]` = done
 - Mark `[x]` when a step is completed **before** the commit
 - Update `Última revisão: YYYY-MM-DD` whenever the file changes
 - New epic: `/flow` creates `docs/epics/backlog/{slug}.md` (no entry in this index yet)
-- When implementation starts, `/spike` moves it from `backlog/` to `em-andamento/` and adds
+- When implementation starts, `/spike` moves it from `backlog/` to `in-progress/` and adds
   the corresponding line below, under "Epics in progress"
-- When the last phase is completed, `/spike` moves it from `em-andamento/` to `finalizados/`
+- When the last phase is completed, `/spike` moves it from `in-progress/` to `done/`
   and updates the corresponding line to "Epics completed"
-- **Moving to `finalizados/` is implementation bookkeeping, not business approval** —
+- **Moving to `done/` is implementation bookkeeping, not business approval** —
   functional sign-off remains the user's exclusive decision
 
 ## Backlog

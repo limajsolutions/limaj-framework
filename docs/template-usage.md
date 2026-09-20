@@ -34,9 +34,9 @@ as its task-management system — it uses `docs/epics/`, versioned alongside the
 docs/
   README.md              # functional/technical index + epic lists by status
   epics/
-    backlog/               # formalized by /flow, implementation not started
-    em-andamento/          # implementation in progress (moved by /spike)
-    finalizados/           # implemented phases (moved by /spike)
+    backlog/              # formalized by /flow, implementation not started
+    in-progress/          # implementation in progress (moved by /spike)
+    done/                 # implemented phases (moved by /spike)
 ```
 
 **Lifecycle of an epic:**
@@ -49,10 +49,10 @@ docs/
    context, architectural decisions (`DA-###`), structure per layer, and a phase checklist
    with `- [ ]`.
 4. The developer triggers `/spike` pointing at the epic. On start, `/spike` moves the file
-   to `docs/epics/em-andamento/` and adds the entry to `docs/README.md`.
+   to `docs/epics/in-progress/` and adds the entry to `docs/README.md`.
 5. `/spike` implements phase by phase, marking `- [x]` for each completed item, always with
    tests and (if there's a schema change) the migration applied in the same turn.
-6. When the last phase is done, `/spike` moves the epic to `docs/epics/finalizados/` and updates
+6. When the last phase is done, `/spike` moves the epic to `docs/epics/done/` and updates
    `docs/README.md`. This is implementation bookkeeping — **not** business approval;
    functional sign-off remains the user's.
 7. `/qa` validates the completed epic using the file's own acceptance criteria as the test script.

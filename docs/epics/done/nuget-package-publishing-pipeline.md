@@ -171,9 +171,9 @@ epic tests is the publishing mechanism itself:
 
 ### Phase 2 — Contained implementation: pipeline publishing pre-release to a private feed
 - [x] Confirm `test-foundation-and-persistence-error-fixes.md` (Phase 2) is complete —
-      already in `docs/epics/finalizados/`, all items of that epic's Phase 2 marked `[x]`.
+      already in `docs/epics/done/`, all items of that epic's Phase 2 marked `[x]`.
 - [x] Confirm `rename-functions-to-web.md` is complete — already in
-      `docs/epics/finalizados/` (commit `02186c6`); the 4 `.csproj` already reflect
+      `docs/epics/done/` (commit `02186c6`); the 4 `.csproj` already reflect
       `Limaj.Framework.Web`.
 - [x] Add `PackageId` + a reference to the `MinVer` package in the 4 `.csproj` — `MinVer`
       8.0.0 (`PrivateAssets=all`), an explicit `PackageId`, and `MinVerTagPrefix=v`

@@ -89,7 +89,7 @@ Impact on other files in the repo (outside `packages/`, but part of the same del
 > **Execution note (2026-09-13):** the text below, as originally written, assumed this epic
 > would create "the repository's first test project". That stopped being true between the
 > epic's formalization (2026-09-12) and its implementation:
-> `test-foundation-and-persistence-error-fixes.md` (completed in `docs/epics/finalizados/`)
+> `test-foundation-and-persistence-error-fixes.md` (completed in `docs/epics/done/`)
 > already created `Limaj.Framework.Functions.Tests` covering exactly the two points below —
 > the 7 `ErrorType` combinations in `ResultExtensionsTests.cs` and the 4 exception-bridge
 > branches in `ExceptionBridgeTests.cs`, already passing against the pre-rename code. The

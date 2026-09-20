@@ -10,7 +10,7 @@ name: Publish packages
 #   - push de tag vX.Y.Z      -> release estavel (MinVer resolve a versao exata da
 #                                 tag, sem sufixo de pre-release), corte manual sem
 #                                 gate formal (DA-006). Ver DA-003 em
-#                                 docs/epics/em-andamento/nuget-package-publishing-pipeline.md.
+#                                 docs/epics/in-progress/nuget-package-publishing-pipeline.md.
 on:
   push:
     branches: [main]

@@ -23,7 +23,7 @@ framework with no publicly versioned releases, entries are organized by date.
 - `/SM`, `/dev`, `/bugfix`, and `/review` were **removed** from `.claude/commands/` (canonical in `template-backend/`, mirrored at the root via `sync-commands.sh`). *(Historical: these files have since moved to my-skills — see "Removed" above.)*
 
 ### Added
-- Work-management convention via `docs/epics/{backlog,em-andamento,finalizados}/` replacing GitHub Issues/Projects as the tracking system — documented in [`docs/template-usage.md`](docs/template-usage.md) and referenced in `CLAUDE.md`.
+- Work-management convention via `docs/epics/{backlog,in-progress,done}/` replacing GitHub Issues/Projects as the tracking system — documented in [`docs/template-usage.md`](docs/template-usage.md) and referenced in `CLAUDE.md`.
 - `template-backend/docs/README.md` and the `docs/epics/` folder skeleton — now ship ready-made with every new product created from the template.
 
 ## [2026-06-06] — Isolated Dev Container + initial slash commands

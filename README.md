@@ -16,7 +16,7 @@ starting-point `.claude/settings.json` + `CLAUDE.md` for a new project come from
 - `packages/Limaj.Framework.Application`: application layer decoupled from concrete infrastructure.
 - `packages/Limaj.Framework.Persistence.EFCore`: EF Core adapters implementing the abstraction contracts.
 - `packages/Limaj.Framework.Web`: generic HTTP pipeline, host-agnostic (Azure Functions isolated worker or Minimal API — both speak `HttpRequest`/`IResult`).
-- `template-backend/`: scaffold for starting new products — already ships `.devcontainer/`, `docs/epics/{backlog,em-andamento,finalizados}/`, and `docs/README.md`.
+- `template-backend/`: scaffold for starting new products — already ships `.devcontainer/`, `docs/epics/{backlog,in-progress,done}/`, and `docs/README.md`.
 - `docs/template-usage.md`: how to consume/evolve the template, including the epic-management lifecycle under `docs/epics/`.
 - `Limaj.Framework.sln`: framework solution for building/testing the base packages.
 
@@ -241,7 +241,7 @@ The 4 packages (`Abstractions`, `Application`, `Persistence.EFCore`, `Web`) are 
 lockstep (same version, one tag per release) to this repository's **GitHub Packages**
 feed, via [`.github/workflows/publish-packages.yml`](.github/workflows/publish-packages.yml).
 Full decisions in
-[`docs/epics/finalizados/nuget-package-publishing-pipeline.md`](docs/epics/finalizados/nuget-package-publishing-pipeline.md).
+[`docs/epics/done/nuget-package-publishing-pipeline.md`](docs/epics/done/nuget-package-publishing-pipeline.md).
 
 ### Pre-release (automatic)
 
