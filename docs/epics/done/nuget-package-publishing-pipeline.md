@@ -1,7 +1,7 @@
 # Versioned publishing of Limaj.Framework.* packages (feed + pipeline)
 
 **Status:** Done (implementation — functional sign-off is the user's decision)
-**Última revisão:** 2026-09-13
+**Última revisão:** 2026-10-04 (DA-001 revised — stable releases now also go to nuget.org; see Phase 4)
 
 ## Context
 
@@ -34,6 +34,29 @@ idea.
   before validating the format with a first consumer is premature optimization with a high
   reversal cost. Accepted trade-off: GitHub Packages requires authentication even for
   reads, even on a public repository — each consumer product needs a `read:packages` PAT.
+
+  > **Revised 2026-10-04 (user decision, as project owner) — stable releases are also
+  > published to `nuget.org`; GitHub Packages stays for every version, including
+  > pre-releases.** Trigger: the auth-for-reads trade-off accepted above turned out to be
+  > real friction in practice — every consumer (even ones the same team owns) failed to
+  > restore without per-repo PAT setup, so the framework could not be consumed as a plain
+  > dependency, which is this epic's goal. How the two original objections are handled:
+  >
+  > - *Irreversibility (no delete, only unlist):* only **stable** `vX.Y.Z` tags go to
+  >   nuget.org (`publish-nuget-org` job, `if: startsWith(github.ref, 'refs/tags/v')`);
+  >   pre-releases from `main` never reach it. A bad stable version is unlisted and marked
+  >   deprecated (README → "Incident: bad version published").
+  > - *Blast radius of a long-lived global push key:* there is no stored key. nuget.org
+  >   **Trusted Publishing** exchanges the job's GitHub OIDC token for a ~1h API key, and the
+  >   nuget.org policy only accepts tokens from `limajsolutions/limaj-framework` +
+  >   `publish-packages.yml` + environment `nuget` (restricted to `v*` tags), scoped to the
+  >   glob `Limaj.Framework.*`. `id-token: write` is granted only to that job.
+  >
+  > Name reservation is no longer premature: the 4 IDs were free and are now owned by
+  > `limajsolutions` on nuget.org; reserving the `Limaj.Framework.*` prefix is still pending
+  > (requested by e-mail to account@nuget.org). First nuget.org release: `v2.0.0` (commit
+  > `866f9d4`, 2026-10-04) — a major bump because the same commit moved the packages to
+  > `net10.0` only; `v1.0.0` (`net9.0`) remains on GitHub Packages only.
 
 - **DA-002 — Lockstep versioning across the 4 packages, via MinVer + Git tag.** The 4
   packages always ship with the same version number (one `vX.Y.Z` tag per release),
@@ -110,6 +133,7 @@ flowchart LR
     E --> F[push to GitHub Packages]
     F --> G{stable tag created manually?}
     G -->|yes| H[version marked as stable release]
+    H --> J[push to nuget.org — Trusted Publishing, since the DA-001 revision]
     G -->|no| I[stays as pre-release]
 ```
 
@@ -133,7 +157,9 @@ epic tests is the publishing mechanism itself:
   while there's no real consumer.
 - GitHub Packages requiring auth for reads pushes operational cost onto each consumer
   product (managing a PAT) — acceptable because those products are already administered by
-  the same team, not anonymous internet consumers.
+  the same team, not anonymous internet consumers. *(Revised 2026-10-04: in practice it was
+  not acceptable — see DA-001's revision. Since then the PAT is only needed to consume
+  pre-releases.)*
 - `template-backend/` remains outside `Limaj.Framework.sln` and outside this pipeline — no
   real workflow is added to `template-backend/.github/workflows/` as a side effect of this
   epic.
@@ -145,10 +171,14 @@ epic tests is the publishing mechanism itself:
 - Trigger restricted to `push` on `main` — never `pull_request`/`pull_request_target`
   (avoids exposing a write token to fork code).
 - Consumption uses a fine-grained PAT scoped only to `read:packages`, no `write`, stored as
-  a secret in the consumer repository — never in plain text.
+  a secret in the consumer repository — never in plain text. *(Corrected 2026-10-04: GitHub
+  Packages' NuGet registry does not accept fine-grained PATs — it must be a **classic** PAT
+  with only `read:packages`, and it is now only needed for pre-releases.)*
 - `nuget.org` was also ruled out for security reasons: a push API key with global reach has
   a larger blast radius (a leak allows publishing a malicious version publicly to any
-  consumer in the world) than a job-scoped, short-lived `GITHUB_TOKEN`.
+  consumer in the world) than a job-scoped, short-lived `GITHUB_TOKEN`. *(Revised
+  2026-10-04: addressed by Trusted Publishing — no stored key, a ~1h key bound to this
+  repo/workflow/environment and to the `Limaj.Framework.*` glob; see DA-001's revision.)*
 - No product/domain secret is introduced — the packages remain free of business rules
   (guardrail from `CLAUDE.md`), so the published content carries no risk of exposing
   proprietary logic.
@@ -222,7 +252,28 @@ epic tests is the publishing mechanism itself:
       deletion, unlike `nuget.org`'s "unlist" — see DA-001), notify consumers.
 - [x] Only consider a public feed (`nuget.org`) if and when there's real demand from a
       consumer outside the team — no action needed now; the decision is recorded in the
-      README as a reminder for when that trigger occurs.
+      README as a reminder for when that trigger occurs. *(Superseded by Phase 4.)*
+
+### Phase 4 — Public feed for stable releases (DA-001 revision, 2026-10-04)
+- [x] nuget.org Trusted Publishing policy `limaj-framework` — owner `limajsolutions`,
+      scope *Push new packages and package versions*, glob `Limaj.Framework.*`, repository
+      `limajsolutions/limaj-framework`, workflow `publish-packages.yml`, environment `nuget`.
+- [x] GitHub environment `nuget` — deployment restricted to `v*` tags, secret `NUGET_USER`
+      (nuget.org username, not a credential); no required reviewer (DA-006: no formal gate).
+- [x] `publish-nuget-org` job in
+      [publish-packages.yml](../../../.github/workflows/publish-packages.yml) — runs only on
+      `vX.Y.Z` tags, `id-token: write` scoped to the job, `NuGet/login` pinned by SHA
+      (v1.2.0), pushes `.nupkg` + `.snupkg`; the GitHub Packages push now uses
+      `--no-symbols` (it doesn't accept `.snupkg`).
+- [x] Package metadata required for a public feed —
+      [packages/Directory.Build.props](../../../packages/Directory.Build.props) (author
+      `Limaj Solutions`, MIT license, repository/project URLs, tags, package README,
+      symbol packages, deterministic CI builds), a `Description` per `.csproj`, and the MIT
+      [LICENSE](../../../LICENSE).
+- [x] README publishing/consumption guide rewritten for both feeds; incident procedure now
+      covers nuget.org (unlist + deprecate) besides GitHub Packages (delete).
+- [x] First nuget.org release — `v2.0.0` (run `37206222056`, all jobs green, 2026-10-04).
+- [ ] Reserve the `Limaj.Framework.*` ID prefix on nuget.org (e-mail to account@nuget.org).
 
 ## Open decisions
 
