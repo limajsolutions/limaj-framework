@@ -13,10 +13,11 @@
     </PackageReference>
   </ItemGroup>
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>Limaj.Framework.Application</PackageId>
+    <Description>Application-layer base services for Limaj Framework, built only on Limaj.Framework.Abstractions (no persistence or host coupling).</Description>
     <MinVerTagPrefix>v</MinVerTagPrefix>
   </PropertyGroup>
 </Project>

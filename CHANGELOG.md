@@ -10,6 +10,7 @@ framework with no publicly versioned releases, entries are organized by date.
 - **Claude Code commands, agents, and skills moved out of this repository.** Removed `.claude/commands/` (root mirror), `template-backend/.claude/commands/` (canonical copy), and `template-backend/scripts/sync-commands.sh` (no longer has anything to sync). They now live in [thalleslima8/my-skills](https://github.com/thalleslima8/my-skills) as the `workflow` plugin; the generic `.claude/settings.json` + `CLAUDE.md` starting point lives in [thalleslima8/ai-starter-kit](https://github.com/thalleslima8/ai-starter-kit).
 
 ### Changed
+- **BREAKING — the 4 `Limaj.Framework.*` packages now target `net10.0` only** (previously `net9.0`), with EF Core / `Microsoft.Extensions.Configuration*` dependencies on `10.0.12`; the test projects and the publish workflow (`dotnet-version: 10.0.x`) moved too. Consumers must be on .NET 10 — release this as a new major version. No source changes were needed.
 - Root `.claude/settings.json` (same content as ai-starter-kit) now declares the `my-skills` marketplace and enables `workflow@my-skills`, so the commands remain usable when working on the framework itself.
 - `template-backend/.devcontainer/claude-settings.json` and `post-create.sh` now state explicitly that they cover permissions only; marketplace/plugins come from the project's `.claude/settings.json` (ai-starter-kit + my-skills).
 - README "Starting a new SaaS" guide: new step 6 (bring in `.claude/` + `CLAUDE.md` from ai-starter-kit) and step 8 (install `workflow@my-skills`, plus `dotnet@my-skills` for EF Core). Removed the "Keeping the commands in sync" section.
@@ -23,8 +24,14 @@ framework with no publicly versioned releases, entries are organized by date.
 - `/SM`, `/dev`, `/bugfix`, and `/review` were **removed** from `.claude/commands/` (canonical in `template-backend/`, mirrored at the root via `sync-commands.sh`). *(Historical: these files have since moved to my-skills — see "Removed" above.)*
 
 ### Added
+- **Stable releases are now published to nuget.org** (public, no authentication to consume), via a new `publish-nuget-org` job in `publish-packages.yml` that runs only on `vX.Y.Z` tags and authenticates with nuget.org Trusted Publishing (GitHub OIDC → short-lived API key, environment `nuget`). Pre-releases from `main` stay on GitHub Packages only. Reverses DA-001's exclusion of nuget.org.
+- Package metadata for the 4 `Limaj.Framework.*` packages (`packages/Directory.Build.props`): author `Limaj Solutions`, MIT license, repository/project URLs, tags, a package README (`packages/PACKAGE_README.md`), symbol packages (`.snupkg`) and deterministic CI builds; a per-package `Description` in each `.csproj`.
+- `LICENSE` (MIT).
 - Work-management convention via `docs/epics/{backlog,in-progress,done}/` replacing GitHub Issues/Projects as the tracking system — documented in [`docs/template-usage.md`](docs/template-usage.md) and referenced in `CLAUDE.md`.
 - `template-backend/docs/README.md` and the `docs/epics/` folder skeleton — now ship ready-made with every new product created from the template.
+
+### Fixed
+- README consumption guide asked for a fine-grained PAT, which GitHub Packages' NuGet registry does not accept — it now asks for a classic PAT with `read:packages`, configured once per machine.
 
 ## [2026-06-06] — Isolated Dev Container + initial slash commands
 

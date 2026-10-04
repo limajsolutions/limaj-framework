@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository purpose
 
-Limaj Framework is a reusable base for .NET 9 / Azure Functions SaaS backends. It contains two distinct, **independent** parts:
+Limaj Framework is a reusable base for .NET 10 / Azure Functions SaaS backends. It contains two distinct, **independent** parts:
 
 1. `packages/Limaj.Framework.*` — generic, domain-agnostic building blocks (the actual framework code).
 2. `template-backend/` — a scaffold meant to be copied into new product repositories. It is **not** in the solution and most of its `src/`/`test/` directories are empty (a `.gitkeep` only, no `.csproj` files yet).

@@ -16,10 +16,11 @@
     </PackageReference>
   </ItemGroup>
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>Limaj.Framework.Web</PackageId>
+    <Description>ASP.NET Core HTTP adapters for Limaj Framework: maps Result/ErrorType to HTTP status codes and converts domain exceptions to structured responses via RequestRunner.</Description>
     <MinVerTagPrefix>v</MinVerTagPrefix>
   </PropertyGroup>
 </Project>

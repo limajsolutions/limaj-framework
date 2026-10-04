@@ -238,17 +238,41 @@ dotnet build Limaj.Framework.sln
 ## Publishing the packages (`Limaj.Framework.*`)
 
 The 4 packages (`Abstractions`, `Application`, `Persistence.EFCore`, `Web`) are published in
-lockstep (same version, one tag per release) to this repository's **GitHub Packages**
-feed, via [`.github/workflows/publish-packages.yml`](.github/workflows/publish-packages.yml).
-Full decisions in
-[`docs/epics/done/nuget-package-publishing-pipeline.md`](docs/epics/done/nuget-package-publishing-pipeline.md).
+lockstep (same version, one tag per release) via
+[`.github/workflows/publish-packages.yml`](.github/workflows/publish-packages.yml) to two
+feeds:
 
-### Pre-release (automatic)
+| Feed | What gets published | Read access |
+|---|---|---|
+| **nuget.org** | Stable releases only (`vX.Y.Z` tag) | Public — no authentication |
+| **GitHub Packages** (this repo) | Every version: pre-releases from `main` + stable releases | Requires authentication (classic PAT with `read:packages`) |
+
+Original decisions in
+[`docs/epics/done/nuget-package-publishing-pipeline.md`](docs/epics/done/nuget-package-publishing-pipeline.md)
+(DA-001 originally ruled out nuget.org; that was reversed to make stable releases publicly
+consumable without credentials).
+
+**How the nuget.org push authenticates — Trusted Publishing, no stored API key.** The
+`publish-nuget-org` job exchanges the workflow's GitHub OIDC token (via
+[`NuGet/login`](https://github.com/NuGet/login)) for a short-lived (~1h) nuget.org API key.
+Setup that lives outside the repo:
+
+- nuget.org → **Trusted Publishing** policy `limaj-framework`: package owner
+  `limajsolutions`, scope *Push new packages and package versions*, glob
+  `Limaj.Framework.*`, repository `limajsolutions/limaj-framework`, workflow
+  `publish-packages.yml`, environment `nuget`. Renaming the workflow file or the
+  environment breaks the push until the policy is updated.
+- GitHub → **Settings → Environments → `nuget`**: restricted to `v*` tags, secret
+  `NUGET_USER` (the nuget.org username — an identifier, not a credential), and optionally a
+  required reviewer so every permanent nuget.org publish needs a manual approval.
+
+### Pre-release (automatic, GitHub Packages only)
 
 Every push to `main` that passes `restore → build → test` generates and publishes a
-pre-release package (`X.Y.Z-alpha.0.<height>+sha.<short-commit>`) — no promise of
-stability, just continuous feedback traceable back to the commit. If `test` fails, nothing
-is published.
+pre-release package (`X.Y.Z-alpha.0.<height>+sha.<short-commit>`) to GitHub Packages — no
+promise of stability, just continuous feedback traceable back to the commit. If `test`
+fails, nothing is published. Pre-releases never go to nuget.org: nothing published there
+can be deleted, only unlisted.
 
 ### Stable release (manual cut, no formal gate)
 
@@ -262,33 +286,32 @@ git push origin v1.2.0
 
 Pushing the tag (`vX.Y.Z` pattern) triggers the same pipeline; since MinVer resolves the
 version exactly at the tag, the package comes out without a pre-release suffix (`1.2.0`,
-not `1.2.0-alpha...`).
+not `1.2.0-alpha...`). It goes to both feeds — the nuget.org job waits for the `nuget`
+environment approval if a required reviewer is configured. nuget.org takes from a few
+minutes up to about an hour to validate and index a new version.
 
 ### Consuming the packages from another repository
 
-#### 1. Authenticate against the feed
+#### 1. Pick the feed
 
-GitHub Packages requires authentication even for reads. In the consumer repository
-(the product that will reference `Limaj.Framework.*`, **not** this repo), create a
-fine-grained PAT scoped to `read:packages` only and configure:
+- **Stable versions** — nothing to configure. nuget.org is the default NuGet source, so
+  `dotnet add package` / `dotnet restore` resolve `Limaj.Framework.*` anonymously.
+- **Pre-releases** — only on GitHub Packages, which requires authentication even for
+  reads, even on a public repository. Use a **classic** PAT with only `read:packages`
+  (GitHub Packages' NuGet registry does not accept fine-grained PATs). Configure it once
+  per machine, outside any repository:
 
-```xml
-<!-- nuget.config of the consumer product -->
-<configuration>
-  <packageSources>
-    <add key="limaj-framework" value="https://nuget.pkg.github.com/limajsolutions/index.json" />
-  </packageSources>
-  <packageSourceCredentials>
-    <limaj-framework>
-      <add key="Username" value="YOUR_GITHUB_USERNAME" />
-      <add key="ClearTextPassword" value="%LIMAJ_FRAMEWORK_PAT%" />
-    </limaj-framework>
-  </packageSourceCredentials>
-</configuration>
-```
+  ```bash
+  dotnet nuget add source https://nuget.pkg.github.com/limajsolutions/index.json \
+    --name limaj-framework --username YOUR_GITHUB_USERNAME --password YOUR_CLASSIC_PAT \
+    --store-password-in-clear-text
+  ```
 
-Never commit the PAT in plain text — use an environment variable (`LIMAJ_FRAMEWORK_PAT`
-above, resolved by NuGet during `dotnet restore`) or a CI secret in the consumer product.
+  This writes to the user-level `NuGet.Config` (`%APPDATA%\NuGet\NuGet.Config` on
+  Windows, `~/.nuget/NuGet/NuGet.Config` on Linux/macOS), never to a versioned file. In a
+  consumer repository's CI under the same owner, prefer the workflow's own `GITHUB_TOKEN`
+  with `permissions: packages: read` (grant the consumer repository access under each
+  package's *Package settings → Manage Actions access*) instead of a PAT.
 
 #### 2. Choose a version
 
@@ -296,12 +319,13 @@ The consumption model is **pinned version, deliberate upgrade** (DA-003) — no 
 range or auto-update. Two version options to reference:
 
 - **Stable** (`X.Y.Z`, e.g. `1.2.0`) — only exists once someone cuts the corresponding
-  tag (see "Stable release" above). This is what a production product should use.
+  tag (see "Stable release" above). This is what a production product should use. See the
+  published versions at `https://www.nuget.org/packages/Limaj.Framework.Abstractions`.
 - **Pre-release** (`X.Y.Z-alpha.0.<height>+sha.<commit>`, e.g.
   `1.2.0-alpha.0.4+sha.a1b2c3d`) — published on every push to `main`; only useful for
   testing a recent change before a stable tag exists, never for production. See the
-  available versions (stable and pre-release) under the **Packages** tab of this
-  repository at `https://github.com/limajsolutions/limaj-framework/packages`.
+  available versions under the **Packages** tab of this repository at
+  `https://github.com/limajsolutions/limaj-framework/packages`.
 
 #### 3. Reference the packages in the project
 
@@ -312,15 +336,17 @@ project references `Limaj.Framework.Application`, not `Limaj.Framework.Web`):
 
 ```bash
 # product's application/domain project
-dotnet add package Limaj.Framework.Abstractions --version 1.2.0 --source limaj-framework
-dotnet add package Limaj.Framework.Application --version 1.2.0 --source limaj-framework
+dotnet add package Limaj.Framework.Abstractions --version 1.2.0
+dotnet add package Limaj.Framework.Application --version 1.2.0
 
 # product's persistence (EF Core) project
-dotnet add package Limaj.Framework.Persistence.EFCore --version 1.2.0 --source limaj-framework
+dotnet add package Limaj.Framework.Persistence.EFCore --version 1.2.0
 
 # product's HTTP host project (Azure Functions isolated worker or Minimal API)
-dotnet add package Limaj.Framework.Web --version 1.2.0 --source limaj-framework
+dotnet add package Limaj.Framework.Web --version 1.2.0
 ```
+
+For a pre-release, add `--source limaj-framework` (the source name configured in step 1).
 
 Direct equivalent in `.csproj`, if you prefer editing manually instead of `dotnet add`:
 
@@ -339,18 +365,16 @@ no supported scenario today for mixing different versions between them.
 
 1. Immediately publish the fixed version (new tag `vX.Y.Z+1`) — never overwrite
    the bad version, SemVer doesn't allow reusing the same number.
-2. Remove the bad version from the feed: the package's page at
-   `https://github.com/orgs/limajsolutions/packages` (or the user's, if the package is
-   under a personal account) → the specific version → **Delete version** (requires
-   admin permission on the package). Unlike `nuget.org`, GitHub Packages allows real
-   deletion, not just "unlisting".
+2. Pull the bad version from each feed it reached:
+   - **nuget.org** (stable only) — versions **cannot be deleted**. On the package page →
+     **Manage** → **Listing**, unlist the version (hides it from search and from new
+     installs without an explicit version), and under **Deprecation** mark it as having
+     critical bugs, pointing to the fixed version. Repeat for the 4 packages.
+   - **GitHub Packages** — the package's page at
+     `https://github.com/limajsolutions?tab=packages` → the specific version → **Delete
+     version** (requires admin permission on the package).
 3. Notify package consumers (the teams owning the products) to update their
    reference to the fixed version.
-
-### Public feed (`nuget.org`)
-
-Out of scope for now — only consider it if and when there's real demand from a
-consumer outside the team (see DA-001).
 
 ## Guardrails
 
