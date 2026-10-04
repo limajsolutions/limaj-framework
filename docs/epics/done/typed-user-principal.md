@@ -109,6 +109,10 @@ confirm or revert on PR #1). Implemented after `result-core-package-split`.
     `principal is not null`. Same 3.0.0-deprecates / 4.0.0-removes rule as
     `web-error-extensibility` DA-013; the removal is tracked in that epic's 4.0.0 phase.
   - Callers keep compiling with a warning; implementers implement only the new member.
+    *Note (PR #1 review):* this holds for callers that go through the `IUserIdentityGateway`
+    interface (CS0618). Callers holding the concrete implementing class get CS1061, because
+    default interface members are reachable only through the interface; they call through the
+    interface or move to `GetCurrentPrincipalAsync`.
   - **Migration note** (CHANGELOG, BREAKING): implement `GetCurrentPrincipalAsync` (or
     `IUserIdentityGateway<TPrincipal>`); **delete your own `GetCurrentUserIdAsync` /
     `IsAuthenticatedAsync` implementations** — they would silently override the delegating
@@ -195,6 +199,14 @@ Choices made where the decisions above left the mechanics open:
 - **Non-echoing exception test:** the only rejected values are empty/whitespace, so the test
   asserts the message is identical for `""` and `" \t "` (independent of the value) rather than
   searching for the value in it.
+- **Recipe: app-only detection and principals without a tenant** (PR #1 review): app-only
+  tokens can carry `sub`/`oid` (Entra ID, Auth0), so the Web README recipe (scoped to JWT
+  bearer access tokens) detects them explicitly and provider-specifically to yield
+  `UserId == null`: Entra reads `oid` as the user id, and `idtyp` decides when enabled, with a
+  missing `scp` as the fail-closed fallback; Auth0 reads `sub` and checks `gty` =
+  `client-credentials`. Per DA-003, an authenticated caller with no `tid` is a non-null
+  principal with a nullable `TenantId` that Application answers with `Forbidden` (403), not
+  `null` (401).
 - **Obsolete-member cases** use `InlineData` (has-principal flag + user id) instead of
   `TheoryData<UserPrincipal?, …>`, which xUnit cannot serialize.
 

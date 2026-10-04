@@ -38,6 +38,11 @@ as 4.0.0.
   `IsAuthenticatedAsync` implementations** — they would silently override the new delegating
   defaults, with no compiler warning. Move callers to the `GetCurrentPrincipalAsync` snapshot
   (see the BREAKING entry below).
+- **`IUserIdentityGateway` callers:** calls to `GetCurrentUserIdAsync` / `IsAuthenticatedAsync`
+  through the `IUserIdentityGateway` interface keep compiling, with warning CS0618. Calls on a
+  variable typed as the **concrete implementing class** fail with error **CS1061**: a default
+  interface member is reachable only through the interface. Call through the interface, or move
+  to `GetCurrentPrincipalAsync`.
 
 ### Changed
 - **BREAKING — the result core moved to the new `Limaj.Framework.Core` package**
@@ -69,7 +74,9 @@ as 4.0.0.
   - **Migration:** implement `GetCurrentPrincipalAsync` (or the generic interface); **delete
     your own `GetCurrentUserIdAsync` / `IsAuthenticatedAsync` implementations**, which would
     silently override the delegating defaults with no compiler warning; move callers to the
-    snapshot (`principal is null` / `principal.UserId`).
+    snapshot (`principal is null` / `principal.UserId`). Callers through the interface get
+    warning CS0618; callers typed as the concrete gateway class get error CS1061 (see
+    "Upgrading from 2.x to 3.0.0").
 - **Log levels and EventIds of the exception bridge** (DA-006). An exception mapped by the host's `IExceptionToErrorMapper` is now logged by its resulting status: 5xx at `Error` (EventId 5000), 4xx at `Warning` (4003). It used to be `Warning` regardless, so **new error-level alerts may fire**. Every event now has a stable `EventId` via `LoggerMessage` (table in the Web README). The unhandled-exception log now also carries `ex.Source`.
 
 ### Added
@@ -82,9 +89,9 @@ as 4.0.0.
 - **`LimajHttpErrorOptions.IncludeDetailsOutsideValidation`** (DA-008): opt-in to send `Error.Details` as `details` for types other than Validation. Never on a 5xx.
 
 ### Deprecated
-- **`Error.HttpStatusCode`** (DA-010): `[Obsolete]`, removed in 4.0.0. Map statuses outside the `ErrorType` table in your `IErrorHttpMapper`, keyed on `Error.Code` (`MapWithStatusCode`). `Error` is now an explicit record that keeps the 2.0 five-parameter constructor and five-value `Deconstruct` with the same signatures (both `[Obsolete]`), so code that sets `HttpStatusCode` still compiles, with a warning. `[OverloadResolutionPriority]` keeps calls without `HttpStatusCode` on the new four-parameter constructor.
+- **`Error.HttpStatusCode`** (DA-010): `[Obsolete]`, removed in 4.0.0. Map statuses outside the `ErrorType` table in your `IErrorHttpMapper`, keyed on `Error.Code` (`MapWithStatusCode`). `Error` is now an explicit record that keeps the 2.0 five-parameter constructor and five-value `Deconstruct` with the same signatures (both `[Obsolete]`), so code that sets `HttpStatusCode` still compiles (source compatibility, once its usings point to `Limaj.Framework.Core`), with a warning. It is not binary compatible: `Error` changed assembly, so recompile. `[OverloadResolutionPriority]` keeps calls without `HttpStatusCode` on the new four-parameter constructor.
 - **`LimajHttpErrorOptions.ExposeUnexpectedResultMessage`**: born `[Obsolete]` as the temporary opt-out of the fix below, removed in 4.0.0.
-- **`IUserIdentityGateway.GetCurrentUserIdAsync` and `IsAuthenticatedAsync`** (`typed-user-principal` DA-006): `[Obsolete]` default interface members, removed in 4.0.0. They now derive from `GetCurrentPrincipalAsync` (`principal?.UserId`, `principal is not null`), so callers keep compiling with a warning; use `GetCurrentPrincipalAsync()` instead.
+- **`IUserIdentityGateway.GetCurrentUserIdAsync` and `IsAuthenticatedAsync`** (`typed-user-principal` DA-006): `[Obsolete]` default interface members, removed in 4.0.0. They now derive from `GetCurrentPrincipalAsync` (`principal?.UserId`, `principal is not null`). Callers through the `IUserIdentityGateway` interface keep compiling, with warning CS0618; callers holding the concrete implementing class get error CS1061, because a default interface member is reachable only through the interface. Use `GetCurrentPrincipalAsync()` instead.
 
 ### Security
 - **The 500 for an unhandled exception no longer sends `ex.Source`** (DA-005, CWE-209). Its `detail` (V2) / `code` (V3) is now the fixed `unexpected_error`. `ex.Source` stays in the log.

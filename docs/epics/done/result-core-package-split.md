@@ -194,6 +194,12 @@ Choices made where the decisions above left the mechanics open:
   inspects (via `typeof(IExceptionToErrorMapper)`) is now Core; the assertion is unchanged.
 - **CHANGELOG `Error.HttpStatusCode` entry:** "There is no binary break" was dropped, because
   `Error` now changes assembly in the same release; the signature-compatibility part stays.
+- **"No binary break" leftovers** (PR #1 review): the `Error` XML remarks and the ErrorTests
+  test `HttpStatusCode_IsObsolete_WithoutBinaryBreak` (renamed
+  `HttpStatusCode_IsObsolete_AndV2SignaturesAreKeptForSourceCompatibility`) now claim only
+  source compatibility. Every assertion (signatures kept, obsolete markers) still holds for
+  source compatibility, so none changed and no triage applied. The README install and release
+  examples use 3.0.0, since `Limaj.Framework.Core` has no earlier version.
 
 ## Phase checklist
 

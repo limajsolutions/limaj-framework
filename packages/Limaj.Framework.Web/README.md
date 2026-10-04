@@ -204,12 +204,16 @@ provider.
 
 ```csharp
 // Product code: a principal with what the product needs, and nothing more.
-public sealed class AcmePrincipal(string? userId, string tenantId) : UserPrincipal(userId)
+public sealed class AcmePrincipal(string? userId, string? tenantId) : UserPrincipal(userId)
 {
-    public string TenantId { get; } = tenantId;
+    // null = an authenticated caller whose token carries no tenant: Application answers 403.
+    public string? TenantId { get; } = tenantId;
 }
 
 // Product host: ClaimsPrincipal → principal. Claims types stay in the host.
+// This recipe is for an API that authenticates JWT bearer ACCESS tokens (not ID tokens or cookie
+// sessions), with JwtBearerOptions.MapInboundClaims = false; otherwise ASP.NET Core renames
+// "sub", "scp", "roles"... to long URIs.
 public sealed class HttpUserIdentityGateway(IHttpContextAccessor httpContextAccessor)
     : IUserIdentityGateway<AcmePrincipal>
 {
@@ -218,21 +222,50 @@ public sealed class HttpUserIdentityGateway(IHttpContextAccessor httpContextAcce
         ClaimsPrincipal? user = httpContextAccessor.HttpContext?.User;
         if (user?.Identity?.IsAuthenticated != true)
         {
-            return Task.FromResult<AcmePrincipal?>(null); // null = no authenticated caller
+            return Task.FromResult<AcmePrincipal?>(null); // null = no authenticated caller, nothing else
         }
 
-        // Your provider's opaque, stable id: "sub" (OIDC; set JwtBearerOptions.MapInboundClaims = false
-        // to keep the name), "oid" (Entra ID)... Absent for a client-credentials caller, which yields
-        // an authenticated non-user principal (UserId == null).
-        var userId = user.FindFirst("sub")?.Value;
-        var tenantId = user.FindFirst("tid")?.Value;
-        if (tenantId is null)
-        {
-            return Task.FromResult<AcmePrincipal?>(null); // fail closed on an incomplete identity
-        }
+        // An app-only (client-credentials) caller is authenticated but is not a user: UserId == null.
+        // Its token can still carry "sub"/"oid" (the service principal or client), so it is detected
+        // explicitly, never inferred from a missing user-id claim.
+        var userId = IsAppOnlyCaller(user) ? null : user.FindFirst(UserIdClaim)?.Value;
+
+        // A caller without a tenant claim is still a non-null principal (DA-003), with
+        // TenantId == null, never null.
+        var tenantId = user.FindFirst(TenantIdClaim)?.Value;
 
         return Task.FromResult<AcmePrincipal?>(new AcmePrincipal(userId, tenantId));
     }
+
+    // The members below are PROVIDER-SPECIFIC: keep only your identity provider's version, never
+    // mix providers, and verify them against real user and client-credentials access tokens from
+    // your IdP before shipping.
+
+    // Entra ID: the stable user id is "oid" (unique with "tid"); "sub" is pairwise per application.
+    private const string UserIdClaim = "oid";
+    private const string TenantIdClaim = "tid";
+
+    // Entra ID: when the "idtyp" optional claim is enabled in the app registration, it decides
+    // ("app" = app-only, "user" = delegated). Without it, fall back on "scp": a delegated access
+    // token normally carries it and an app-only one does not (it carries app "roles", if
+    // granted), so a missing "scp" counts as app-only. Either edge case (a delegated token
+    // without "scp", an app-only token without roles) fails closed: no user id. The fallback
+    // holds for access tokens only: ID tokens and cookie sessions carry no "scp".
+    private static bool IsAppOnlyCaller(ClaimsPrincipal user)
+        => user.FindFirst("idtyp")?.Value is { } tokenType
+            ? tokenType == "app"
+            : user.FindFirst("scp") is null;
+
+    // Auth0 instead. The "sub" user id also fits generic OIDC providers, but the "gty" check is
+    // Auth0-only: Okta, Keycloak and other providers do not emit "gty", so they need their own
+    // app-only signal, or every client-credentials caller would pass as a user (fails open).
+    // Auth0 client-credentials tokens carry gty = "client-credentials" (and
+    // sub = "{client_id}@clients"); Auth0 user tokens have no "scp", so do not reuse the Entra
+    // check. The tenant claim comes from Auth0 Organizations.
+    // private const string UserIdClaim = "sub";
+    // private const string TenantIdClaim = "org_id";
+    // private static bool IsAppOnlyCaller(ClaimsPrincipal user)
+    //     => user.HasClaim("gty", "client-credentials");
 }
 
 builder.Services.AddHttpContextAccessor();
@@ -244,13 +277,18 @@ builder.Services.AddScoped<IUserIdentityGateway>(sp => sp.GetRequiredService<Htt
 In Application code, take one snapshot per operation:
 
 ```csharp
-var principal = await identity.GetCurrentPrincipalAsync(cancellationToken);
+var principal = await identityGateway.GetCurrentPrincipalAsync(cancellationToken); // IUserIdentityGateway<AcmePrincipal>
 if (principal is null)
 {
-    return Result<Order>.Unauthorized();
+    return Result<Order>.Unauthorized(); // 401: no authenticated caller
 }
 
-if (!principal.HasUserId || order.OwnerId != principal.UserId)
+if (principal.TenantId is null)
+{
+    return Result<Order>.Forbidden(); // 403: authenticated, but the principal has no tenant
+}
+
+if (!principal.HasUserId || order.TenantId != principal.TenantId || order.OwnerId != principal.UserId)
 {
     throw new NotFoundException("Order", order.Id); // no user id in the message
 }
@@ -259,6 +297,8 @@ if (!principal.HasUserId || order.OwnerId != principal.UserId)
 `GetCurrentPrincipalAsync` returns `null` exactly when there is no authenticated caller. A
 non-null principal with `UserId == null` is an authenticated **non-user** caller
 (service-to-service, client credentials), so ownership checks against `UserId` fail closed.
+An authenticated caller whose principal lacks something the product needs (here, a tenant) is
+still a non-null principal: Application answers `Forbidden` (403), never `Unauthorized` (401).
 For background jobs with no request, your gateway decides what to return (for example a
 non-user principal); the framework has no first-class "system" caller yet.
 
@@ -284,4 +324,6 @@ non-user principal); the framework has no first-class "system" caller yet.
 
 `GetCurrentUserIdAsync` and `IsAuthenticatedAsync` are `[Obsolete]` default members, derived
 from `GetCurrentPrincipalAsync`, and are removed in 4.0.0. Do not implement them: a class's
-own implementation silently replaces the default.
+own implementation silently replaces the default. They are reachable only through the
+interface: a call through `IUserIdentityGateway` compiles with warning CS0618, while a call on
+a variable typed as the concrete gateway class does not compile (CS1061).

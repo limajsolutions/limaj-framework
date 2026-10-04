@@ -232,6 +232,10 @@ action pending approval). The framework only has to make these possible through 
     Making the warning fire on construction without a binary break probably needs an explicit
     constructor plus an obsolete overload. The framework itself will need `#pragma` to keep
     reading the property in 3.x.
+  - **Note (DA-013, `result-core-package-split`):** "without a binary break" was written for a
+    2.1.0 minor. With the 3.0.0 release, `Error` moved to `Limaj.Framework.Core`, so only
+    **source** compatibility holds (the 2.0 constructor and `Deconstruct` are kept); consumers
+    recompile.
 
 - **DA-011 — Out of scope.** *(consensus)*
   - **Consumer-owned:** error mapping for MCP tools, the code catalog and its OpenAPI
@@ -348,7 +352,7 @@ Choices made where the decisions above left the mechanics open:
   `[Obsolete]`, plus the obsolete property. A new four-parameter constructor carries
   `[OverloadResolutionPriority(1)]`, so `new Error(code, message)` binds to it without a
   warning or an ambiguity. `new Error(..., HttpStatusCode: x)` binds to the obsolete one and
-  warns. `ErrorTests.HttpStatusCode_IsObsolete_WithoutBinaryBreak` locks this in.
+  warns. `ErrorTests.HttpStatusCode_IsObsolete_AndV2SignaturesAreKeptForSourceCompatibility` locks this in.
 - **DA-006 order override:** the responder runs `BuiltInExceptionToErrorMapper` (resolved from
   DI) before the host's `IExceptionToErrorMapper`. A host that wants another order registers a
   subclass of `BuiltInExceptionToErrorMapper` in its place (README recipe), so no composite
@@ -405,7 +409,8 @@ Choices made where the decisions above left the mechanics open:
 ### Phase 5 — `Error` additions (3.0.0, DA-007, DA-008, DA-010)
 - [x] `TimeSpan? RetryAfter` (`init`, outside the positional constructor) + `Retry-After` header
 - [x] `Details` outside Validation behind an opt-in; never on 5xx
-- [x] `[Obsolete]` on `Error.HttpStatusCode` without a binary break (validate the positional-record
+- [x] `[Obsolete]` on `Error.HttpStatusCode` without a binary break (source compatibility only
+      since 3.0.0 — see the DA-010 note) (validate the positional-record
       mechanics); `#pragma` where the framework still reads it
 
 ### Phase 6 — Security fixes (3.0.0, DA-005)

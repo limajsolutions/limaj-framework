@@ -19,11 +19,14 @@ public enum ErrorType
 /// </summary>
 /// <remarks>
 /// Written as an explicit record (instead of a positional one) so the deprecated
-/// <see cref="HttpStatusCode"/> can warn on construction without a binary break: the
+/// <see cref="HttpStatusCode"/> can warn on construction while 2.0 source keeps compiling: the
 /// 5-parameter constructor and the 5-value <c>Deconstruct</c> of the 2.0 positional record are
 /// kept with the same signatures, marked <see cref="ObsoleteAttribute"/>, and
 /// <see cref="OverloadResolutionPriorityAttribute"/> keeps calls that don't pass
-/// <c>HttpStatusCode</c> on the non-obsolete constructor.
+/// <c>HttpStatusCode</c> on the non-obsolete constructor. This is source compatibility only:
+/// <see cref="Error"/> moved from <c>Limaj.Framework.Abstractions</c> to
+/// <c>Limaj.Framework.Core</c> in 3.0.0 with no type forwarding, so assemblies compiled against
+/// 2.x must be recompiled.
 /// </remarks>
 public sealed record Error
 {

@@ -287,13 +287,13 @@ There's no automation or mandatory checklist for deciding "when" to cut a tag �
 it's up to whoever is cutting it (DA-006). The mechanism:
 
 ```bash
-git tag -a v1.2.0 -m "Release v1.2.0"
-git push origin v1.2.0
+git tag -a v3.0.0 -m "Release v3.0.0"
+git push origin v3.0.0
 ```
 
 Pushing the tag (`vX.Y.Z` pattern) triggers the same pipeline; since MinVer resolves the
-version exactly at the tag, the package comes out without a pre-release suffix (`1.2.0`,
-not `1.2.0-alpha...`). It goes to both feeds — the nuget.org job waits for the `nuget`
+version exactly at the tag, the package comes out without a pre-release suffix (`3.0.0`,
+not `3.0.0-alpha...`). It goes to both feeds — the nuget.org job waits for the `nuget`
 environment approval if a required reviewer is configured. nuget.org takes from a few
 minutes up to about an hour to validate and index a new version.
 
@@ -325,11 +325,11 @@ minutes up to about an hour to validate and index a new version.
 The consumption model is **pinned version, deliberate upgrade** (DA-003) — no floating
 range or auto-update. Two version options to reference:
 
-- **Stable** (`X.Y.Z`, e.g. `1.2.0`) — only exists once someone cuts the corresponding
+- **Stable** (`X.Y.Z`, e.g. `3.0.0`) — only exists once someone cuts the corresponding
   tag (see "Stable release" above). This is what a production product should use. See the
   published versions at `https://www.nuget.org/packages/Limaj.Framework.Abstractions`.
 - **Pre-release** (`X.Y.Z-alpha.0.<height>+sha.<commit>`, e.g.
-  `1.2.0-alpha.0.4+sha.a1b2c3d`) — published on every push to `main`; only useful for
+  `3.0.1-alpha.0.4+sha.a1b2c3d`) — published on every push to `main`; only useful for
   testing a recent change before a stable tag exists, never for production. See the
   available versions under the **Packages** tab of this repository at
   `https://github.com/limajsolutions/limaj-framework/packages`.
@@ -343,15 +343,15 @@ project references `Limaj.Framework.Application`, not `Limaj.Framework.Web`):
 
 ```bash
 # product's application/domain project
-dotnet add package Limaj.Framework.Core --version 1.2.0
-dotnet add package Limaj.Framework.Abstractions --version 1.2.0
-dotnet add package Limaj.Framework.Application --version 1.2.0
+dotnet add package Limaj.Framework.Core --version 3.0.0
+dotnet add package Limaj.Framework.Abstractions --version 3.0.0
+dotnet add package Limaj.Framework.Application --version 3.0.0
 
 # product's persistence (EF Core) project
-dotnet add package Limaj.Framework.Persistence.EFCore --version 1.2.0
+dotnet add package Limaj.Framework.Persistence.EFCore --version 3.0.0
 
 # product's HTTP host project (Azure Functions isolated worker or Minimal API)
-dotnet add package Limaj.Framework.Web --version 1.2.0
+dotnet add package Limaj.Framework.Web --version 3.0.0
 ```
 
 For a pre-release, add `--source limaj-framework` (the source name configured in step 1).
@@ -360,9 +360,9 @@ Direct equivalent in `.csproj`, if you prefer editing manually instead of `dotne
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="Limaj.Framework.Core" Version="1.2.0" />
-  <PackageReference Include="Limaj.Framework.Abstractions" Version="1.2.0" />
-  <PackageReference Include="Limaj.Framework.Application" Version="1.2.0" />
+  <PackageReference Include="Limaj.Framework.Core" Version="3.0.0" />
+  <PackageReference Include="Limaj.Framework.Abstractions" Version="3.0.0" />
+  <PackageReference Include="Limaj.Framework.Application" Version="3.0.0" />
 </ItemGroup>
 ```
 

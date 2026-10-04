@@ -55,10 +55,11 @@ public class ErrorTests
 #pragma warning restore CS0618
 
     [Fact]
-    public void HttpStatusCode_IsObsolete_WithoutBinaryBreak()
+    public void HttpStatusCode_IsObsolete_AndV2SignaturesAreKeptForSourceCompatibility()
     {
-        // DA-010: the 2.0 positional record's public members keep their exact signatures, so
-        // assemblies compiled against 2.0 still bind; each one that carries HttpStatusCode warns.
+        // DA-010: the 2.0 positional record's public members keep their exact signatures, so 2.0
+        // source that uses them still compiles; each one that carries HttpStatusCode warns. Not
+        // binary compatibility: Error moved to Limaj.Framework.Core in 3.0.0 (result-core-package-split).
         var fiveParameterConstructor = typeof(Error).GetConstructor(
             [typeof(string), typeof(string), typeof(ErrorType), typeof(IReadOnlyDictionary<string, string[]>), typeof(HttpStatusCode?)]);
         var fourParameterConstructor = typeof(Error).GetConstructor(
