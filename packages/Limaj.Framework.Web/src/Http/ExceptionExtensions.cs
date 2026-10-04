@@ -1,4 +1,4 @@
-using Limaj.Framework.Abstractions.Errors;
+using Limaj.Framework.Core.Errors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 

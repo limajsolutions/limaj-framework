@@ -1,6 +1,4 @@
-using Limaj.Framework.Abstractions.Common;
-
-namespace Limaj.Framework.Abstractions.Errors;
+namespace Limaj.Framework.Core.Errors;
 
 /// <summary>
 /// Extension point a host resolves via DI to map exceptions the standard bridge

@@ -1,4 +1,4 @@
-using Limaj.Framework.Abstractions.Errors;
+using Limaj.Framework.Core.Errors;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 

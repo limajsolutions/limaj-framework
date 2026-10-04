@@ -7,10 +7,45 @@ version. The `[2026-06-06]` section predates versioning and keeps its date headi
 
 ## [Unreleased]
 
-Planned as 2.1.0, a minor release (epic `web-error-extensibility`, DA-001). There is no
-`v2.1.0` tag yet, so these notes carry no version heading and no release date. Everything
-below is additive or opt-in, except the "Security" fixes, which ship on by default as an
-explicit exception (DA-005).
+Planned as 3.0.0, a major release (epics `web-error-extensibility`, `result-core-package-split`;
+`web-error-extensibility` DA-013). 2.1.0 is never released: its changes ship here. There is no
+`v3.0.0` tag yet, so these notes carry no version heading and no release date. The BREAKING
+entries below need source changes; read "Upgrading from 2.x to 3.0.0" first. The rest is
+additive or opt-in, except the "Security" fixes, which ship on by default as an explicit
+exception (DA-005). Everything marked `[Obsolete]` here is removed in the next major, planned
+as 4.0.0.
+
+### Upgrading from 2.x to 3.0.0
+
+- **Upgrade every `Limaj.Framework.*` package together.** `Result`, `Error` and the framework
+  exceptions moved to a new assembly, with no type forwarding: mixing 2.x and 3.x packages in
+  one application fails at run time with `TypeLoadException`.
+- **Add `Limaj.Framework.Core`** if you used `Result`/`Error` or the framework exceptions only
+  through `Limaj.Framework.Abstractions` or `Limaj.Framework.Persistence.EFCore`. Projects that
+  reference `Limaj.Framework.Application` or `Limaj.Framework.Web` get it transitively.
+- **Replace the usings** (the type names do not change):
+
+  | 2.x | 3.0.0 |
+  |---|---|
+  | `using Limaj.Framework.Abstractions.Common;` (`Result`, `Result<T>`, `Error`, `ErrorType`) | `using Limaj.Framework.Core;` |
+  | `using Limaj.Framework.Abstractions.Errors;` (`DomainValidationException`, `NotFoundException`, `ConflictException`, `IExceptionToErrorMapper`) | `using Limaj.Framework.Core.Errors;` |
+
+  `Limaj.Framework.Abstractions.Domain`, `.Contracts` and `.Identity` keep their names.
+- **No wire change:** response bodies, `Error.Code` values and HTTP statuses are the same as
+  2.x for the same configuration.
+
+### Changed
+- **BREAKING — the result core moved to the new `Limaj.Framework.Core` package**
+  (`result-core-package-split`, DA-001…DA-006). `Result`, `Result<T>`, `Error` and `ErrorType`
+  are now in namespace `Limaj.Framework.Core`; `DomainValidationException`,
+  `NotFoundException`, `ConflictException` and `IExceptionToErrorMapper` in
+  `Limaj.Framework.Core.Errors`. No `TypeForwardedTo`: this is a clean break in a major.
+  `Limaj.Framework.Core` is dependency-free, ships in lockstep with the other packages and
+  starts at 3.0.0. `Limaj.Framework.Abstractions` keeps `BaseEntity`, `IAudit`, `IRepository`,
+  `IUnitOfWork` and `IUserIdentityGateway` and no longer contains the result types. Package
+  references: `Application` → `Abstractions` + `Core`; `Persistence.EFCore` → `Abstractions`;
+  `Web` → `Core` only.
+- **Log levels and EventIds of the exception bridge** (DA-006). An exception mapped by the host's `IExceptionToErrorMapper` is now logged by its resulting status: 5xx at `Error` (EventId 5000), 4xx at `Warning` (4003). It used to be `Warning` regardless, so **new error-level alerts may fire**. Every event now has a stable `EventId` via `LoggerMessage` (table in the Web README). The unhandled-exception log now also carries `ex.Source`.
 
 ### Added
 - **`IErrorHttpMapper` extension point** (`Limaj.Framework.Web`, DA-002): the single place that writes every error response. `DefaultErrorHttpMapper` is public, with one virtual method per `ErrorType` plus `MapWithStatusCode(error, statusCode)`. A product inherits or decorates it, for example to answer 422 keyed on `Error.Code`.
@@ -21,12 +56,9 @@ explicit exception (DA-005).
 - **`Error.RetryAfter`** (`TimeSpan?`, `init`, outside the constructor, DA-007). The default mapping emits a `Retry-After` header in whole seconds, rounded up, via `RetryAfterHttpResult`, plus `retryAfter` in the `V3` body. The README documents the `RateLimiterOptions.OnRejected` recipe for the ASP.NET Core rate limiter.
 - **`LimajHttpErrorOptions.IncludeDetailsOutsideValidation`** (DA-008): opt-in to send `Error.Details` as `details` for types other than Validation. Never on a 5xx.
 
-### Changed
-- **Log levels and EventIds of the exception bridge** (DA-006). An exception mapped by the host's `IExceptionToErrorMapper` is now logged by its resulting status: 5xx at `Error` (EventId 5000), 4xx at `Warning` (4003). It used to be `Warning` regardless, so **new error-level alerts may fire**. Every event now has a stable `EventId` via `LoggerMessage` (table in the Web README). The unhandled-exception log now also carries `ex.Source`.
-
 ### Deprecated
-- **`Error.HttpStatusCode`** (DA-010): `[Obsolete]`, removed in 3.0.0. Map statuses outside the `ErrorType` table in your `IErrorHttpMapper`, keyed on `Error.Code` (`MapWithStatusCode`). There is no binary break: `Error` is now an explicit record that keeps the 2.0 five-parameter constructor and five-value `Deconstruct` (both `[Obsolete]`). `[OverloadResolutionPriority]` keeps calls without `HttpStatusCode` on the new four-parameter constructor.
-- **`LimajHttpErrorOptions.ExposeUnexpectedResultMessage`**: born `[Obsolete]` as the temporary opt-out of the fix below, removed in 3.0.0.
+- **`Error.HttpStatusCode`** (DA-010): `[Obsolete]`, removed in 4.0.0. Map statuses outside the `ErrorType` table in your `IErrorHttpMapper`, keyed on `Error.Code` (`MapWithStatusCode`). `Error` is now an explicit record that keeps the 2.0 five-parameter constructor and five-value `Deconstruct` with the same signatures (both `[Obsolete]`), so code that sets `HttpStatusCode` still compiles, with a warning. `[OverloadResolutionPriority]` keeps calls without `HttpStatusCode` on the new four-parameter constructor.
+- **`LimajHttpErrorOptions.ExposeUnexpectedResultMessage`**: born `[Obsolete]` as the temporary opt-out of the fix below, removed in 4.0.0.
 
 ### Security
 - **The 500 for an unhandled exception no longer sends `ex.Source`** (DA-005, CWE-209). Its `detail` (V2) / `code` (V3) is now the fixed `unexpected_error`. `ex.Source` stays in the log.

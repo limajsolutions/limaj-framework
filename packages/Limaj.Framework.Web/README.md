@@ -42,7 +42,7 @@ registers an `IProblemDetailsWriter` (see the registration order below).
 other status. Inherit or decorate it and register it as `IErrorHttpMapper`. A registration
 made before or after `AddLimajHttpErrors` wins either way.
 
-Until 3.0.0 adds `ErrorType.BusinessRule`, use this mapper to answer **422** (or 402, 410,
+Until 4.0.0 adds `ErrorType.BusinessRule`, use this mapper to answer **422** (or 402, 410,
 412, 503…), keyed on `Error.Code`. This replaces the deprecated `Error.HttpStatusCode`:
 
 ```csharp
@@ -81,10 +81,10 @@ builder.Services.AddSingleton<BuiltInExceptionToErrorMapper, HostFirstExceptionM
 
 ## Problem Details format: `V2` / `V3`
 
-`LimajHttpErrorOptions.Format` selects the whole response contract. The default in 2.x is
-`V2`; 3.0.0 makes `V3` the default and keeps `V2` as the value to pin during a migration.
+`LimajHttpErrorOptions.Format` selects the whole response contract. The default in 3.x is
+`V2`; 4.0.0 makes `V3` the default and keeps `V2` as the value to pin during a migration.
 
-| | `V2` (default in 2.x) | `V3` |
+| | `V2` (default in 3.x) | `V3` |
 |---|---|---|
 | `title` | `Error.Message` | the status's reason phrase (`Not Found`, `Unprocessable Entity`, …) |
 | `detail` | `Error.Code` (none on validation responses) | `Error.Message` |
@@ -155,7 +155,7 @@ builder.Services.AddRateLimiter(options =>
 
 | Value | An unhandled exception's / a 5xx `ErrorType.Unexpected` result's message |
 |---|---|
-| `null` (default in 2.x) | sent only when `ASPNETCORE_ENVIRONMENT` is `Development` (2.0 behavior) |
+| `null` (default in 3.x) | sent only when `ASPNETCORE_ENVIRONMENT` is `Development` (2.0 behavior) |
 | `true` | always sent; a fixed warning (EventId 1000) is logged at startup |
 | `false` | never sent; the client gets `"An unexpected error occurred."` |
 
@@ -166,11 +166,11 @@ exception only go to the log.
 **Azure Functions (isolated worker):** `ASPNETCORE_ENVIRONMENT` is usually absent there (the
 host uses `AZURE_FUNCTIONS_ENVIRONMENT`), so `null` behaves as "not Development". Set
 `IncludeExceptionDetails` explicitly from your own configuration. The framework will not read
-`AZURE_FUNCTIONS_ENVIRONMENT`, because 3.0.0 removes environment reads altogether (the option
+`AZURE_FUNCTIONS_ENVIRONMENT`, because 4.0.0 removes environment reads altogether (the option
 becomes a `bool`, default `false`). The static facades have no options: they always behave as
 `null`.
 
-`ExposeUnexpectedResultMessage` (`[Obsolete]`, removed in 3.0.0) temporarily restores the
+`ExposeUnexpectedResultMessage` (`[Obsolete]`, removed in 4.0.0) temporarily restores the
 2.0 behavior of sending a 5xx `Result.Unexpected` message in every environment. For a message
 meant for the client, use another `ErrorType`.
 

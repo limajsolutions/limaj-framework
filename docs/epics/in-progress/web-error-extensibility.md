@@ -1,4 +1,4 @@
-# Web error extensibility — extension point, Problem Details format and error contract (2.1.0 → 3.0.0)
+# Web error extensibility — extension point, Problem Details format and error contract (3.0.0 → 4.0.0)
 
 **Status:** In progress — not business-approved (that is the user's decision)
 **Última revisão:** 2026-10-04
@@ -62,6 +62,11 @@ action pending approval). The framework only has to make these possible through 
 
 ## Architectural decisions
 
+> **Version labels updated by DA-013** (in the `result-core-package-split` commit): in
+> DA-002…DA-011 and the sections below them, what was "2.1.0"/"2.x" (first shipping) now
+> reads 3.0.0/3.x, and what was "3.0.0" (removals, default flips) now reads 4.0.0. DA-001's
+> policy and its example labels are unchanged; DA-012 keeps its original labels as history.
+
 - **DA-001 — Version policy.** *(user)*
   - **Minor (2.x):** an additive change, or an opt-in that keeps the current behavior as the
     default. Adding `[Obsolete]` is also minor.
@@ -89,14 +94,14 @@ action pending approval). The framework only has to make these possible through 
     `IExceptionToErrorMapper`, then Unexpected) → `IErrorHttpMapper`. A single place decides
     how every error response is written.
   - **Static facades:** `ResultExtensions.ToHttpResult` and `RequestRunner.RunAsync` keep their
-    signature, concrete return types and body in 2.x. They delegate to the default mapping in
+    signature, concrete return types and body in 3.x. They delegate to the default mapping in
     `V2` format (DA-003).
   - **Rejected — a "deferred" `IResult` resolving the mapper from `RequestServices` at
     execution time:** it changes the concrete type returned, which breaks consumer tests that
     cast to `ProblemHttpResult`. It also hides service location.
   - **Rejected — a per-call `onFailure` overload:** it spreads the error contract across
     routes.
-  - **Version:** minor (2.1.0).
+  - **Version:** minor-sized under DA-001; ships in 3.0.0 (DA-013).
 
 - **DA-003 — W2 + W3 + field semantics: one Problem Details format selector.** *(user, following
   the architect)*
@@ -108,7 +113,7 @@ action pending approval). The framework only has to make these possible through 
     - 404/409 via `Results.Problem`, so every error goes through `IProblemDetailsService`
       (W3);
     - `detail = Error.Message`, with `title` by status.
-  - **Defaults:** `V2` in 2.1.0. `V3` becomes the default in 3.0.0, and `V2` stays as the
+  - **Defaults:** `V2` in 3.0.0. `V3` becomes the default in 4.0.0, and `V2` stays as the
     migration value. The major only flips the default; the API shape does not change.
   - **Why a single selector:** the three items change the same response body. Independent
     flags would create 2³ hybrid contracts that never exist as a default, and multiply the
@@ -118,12 +123,12 @@ action pending approval). The framework only has to make these possible through 
     change. The user chose the architect's selector.
   - **Documented caveat:** with `V2`, `CustomizeProblemDetails` is not global. It does not
     reach 404/409 and gets no `code`. It covers every error response only with `V3`.
-  - ADR candidate: flipping the default format in 3.0.0 while keeping `V2` as the migration
+  - ADR candidate: flipping the default format in 4.0.0 while keeping `V2` as the migration
     value.
 
 - **DA-004 — W4: exposure of exception details by explicit option.** *(user, following the
   architect)*
-  - **2.1.0:** `bool? IncludeExceptionDetails` in `LimajHttpErrorOptions`.
+  - **3.0.0:** `bool? IncludeExceptionDetails` in `LimajHttpErrorOptions`.
     - `null` keeps today's environment read (no behavior change). The default options must
       reproduce it, so the static facade and the mapper share one code path.
     - `true` or `false` always wins.
@@ -131,19 +136,19 @@ action pending approval). The framework only has to make these possible through 
       and the app still starts.
   - **Even with `true`:** only `ex.Message` is exposed. Never the stack trace, inner exceptions
     or `Exception.Data`. A test locks this in.
-  - **3.0.0:** the type becomes `bool`, default `false`, and the framework stops reading any
+  - **4.0.0:** the type becomes `bool`, default `false`, and the framework stops reading any
     environment name.
   - **Divergence recorded:** the analyst preferred default `false` on the new DI path and a
     startup failure when `true` outside Development, on LGPD grounds. The user chose the
     architect's position. A hard lock would again make behavior depend on the environment
     name, which the consumer asked to eliminate.
-  - **Documentation for 2.x:**
+  - **Documentation for 3.x:**
     - On the Azure Functions isolated worker, `ASPNETCORE_ENVIRONMENT` is usually absent (the
       host uses `AZURE_FUNCTIONS_ENVIRONMENT`), so Functions consumers should set
       `IncludeExceptionDetails` explicitly.
-    - Do not add a read of `AZURE_FUNCTIONS_ENVIRONMENT`; 3.0.0 removes environment reads.
+    - Do not add a read of `AZURE_FUNCTIONS_ENVIRONMENT`; 4.0.0 removes environment reads.
 
-- **DA-005 — Security fixes on by default in 2.1.0, as an explicit exception to DA-001.**
+- **DA-005 — Security fixes on by default in 3.0.0, as an explicit exception to DA-001.**
   *(user, following both specialists' recommendation)*
   - **The fixes:**
     - **`ex.Source` leaves the 500 body.** The code becomes a fixed `unexpected_error`. Sending
@@ -153,7 +158,7 @@ action pending approval). The framework only has to make these possible through 
       Outside Development the client gets the generic message. This protects against
       `Result.Unexpected(code, ex.Message)` leaking SQL, configuration or personal data. A
       temporary opt-out (`ExposeUnexpectedResultMessage`) ships marked `[Obsolete]` and is
-      removed in 3.0.0. A product that wants a user-facing message should use another
+      removed in 4.0.0. A product that wants a user-facing message should use another
       `ErrorType`.
     - **`Validation` with `HttpStatusCode` set stops dropping `errors`.** This is a bug:
       validation details are public by design.
@@ -189,14 +194,14 @@ action pending approval). The framework only has to make these possible through 
     `Error`", which still stands. A generic bag invites personal data and an untyped contract.
   - **Version:** minor.
 
-- **DA-008 — `Error.Details` outside Validation stays opt-in, in 2.x and in 3.x.** *(consensus)*
+- **DA-008 — `Error.Details` outside Validation stays opt-in, in 3.x and in 4.x.** *(consensus)*
   - **Why opt-in:** products may have put internal or personal data in the `Details` of
     NotFound/Conflict/etc. counting on it being dropped. Exposing it by default would be a
     silent leak (privacy by default, LGPD art. 46 / GDPR art. 25).
   - **Never on 5xx:** `Unexpected`/5xx never send `Details`, even with the opt-in.
   - **Version:** minor.
 
-- **DA-009 — A1: `ErrorType.BusinessRule = 8` → 422, in 3.0.0.** *(acceptance: consensus;
+- **DA-009 — A1: `ErrorType.BusinessRule = 8` → 422, in 4.0.0.** *(acceptance: consensus;
   version: user, per DA-001)* ADR candidate.
   - **Meaning:** a generic category, not a concrete product type. "Valid input, a rule forbids
     the operation" sits between Validation ("fix the input") and Conflict ("concurrent or
@@ -212,12 +217,12 @@ action pending approval). The framework only has to make these possible through 
   - **Scope:** a `Result.BusinessRule(...)` factory and the 422 mapping. No built-in exception
     maps to it in this epic.
   - **Version:** major, because CS8509 breaks consumers with `TreatWarningsAsErrors`.
-  - **In 2.x:** a consumer gets 422 through `IErrorHttpMapper` keyed on `Error.Code`
+  - **In 3.x:** a consumer gets 422 through `IErrorHttpMapper` keyed on `Error.Code`
     (recommended), or through the `HttpStatusCode` escape hatch.
 
 - **DA-010 — A2: deprecate `Error.HttpStatusCode`.** *(acceptance: consensus; version: user,
   per DA-001)* ADR candidate.
-  - **Schedule:** `[Obsolete]` in 2.1.0, removal in 3.0.0.
+  - **Schedule:** `[Obsolete]` in 3.0.0, removal in 4.0.0.
   - **Why it goes:** a transport concept does not belong in the domain error.
   - **Replacement:** statuses outside the `ErrorType` mapping (402, 410, 412, 503, and 422
     until DA-009 ships) are resolved by the product's `IErrorHttpMapper` keyed on
@@ -226,17 +231,17 @@ action pending approval). The framework only has to make these possible through 
   - **Mechanics for `/spike` to validate:** `HttpStatusCode` is a positional record parameter.
     Making the warning fire on construction without a binary break probably needs an explicit
     constructor plus an obsolete overload. The framework itself will need `#pragma` to keep
-    reading the property in 2.x.
+    reading the property in 3.x.
 
 - **DA-011 — Out of scope.** *(consensus)*
   - **Consumer-owned:** error mapping for MCP tools, the code catalog and its OpenAPI
     publication, and success responses.
   - **A3, splitting the result core into its own package:** tracked in
-    `backlog/result-core-package-split.md`.
+    `done/result-core-package-split.md`.
   - **A4, typed user principal:** tracked in `backlog/typed-user-principal.md`.
 
 - **DA-012 — Release sequencing: 2.1.0 ships before 3.0.0.** *(consensus — `/flow` run of
-  2026-10-04)*
+  2026-10-04)* — **Superseded by DA-013** (kept as history).
   - **Scope of the run:** Phases 1–7 (2.1.0) only. Phase 8 (3.0.0) is a later run, after
     2.1.0 is merged and tagged.
   - **Why:** DA-001's deprecation path (`[Obsolete]` in a minor, removal in the next major)
@@ -248,15 +253,42 @@ action pending approval). The framework only has to make these possible through 
     `- [ ]` until the user cuts it after the merge, so this epic stays in `in-progress/`.
   - **`CHANGELOG.md`:** the 2.1.0 entry does not claim a release date before the tag exists.
 
+- **DA-013 — PR #1 ships as 3.0.0; 2.1.0 is never released; removals move to 4.0.0.**
+  *(user, for the version — consensus, for the consequences — `/flow` run of 2026-10-04)*
+  Supersedes DA-012.
+  - **Version (user):** the pull request that carries Phases 1–7 also carries
+    `result-core-package-split` and `typed-user-principal`, and ships as **3.0.0**. The major
+    is what warns current consumers. The run's scope is those two epics plus Phases 1–7 of this
+    one; Phase 8 is not in it.
+  - **Why the removals cannot go into 3.0.0 anyway (consensus):** with no 2.1.0, 3.0.0 is the
+    first release in which consumers see the `[Obsolete]` items. Removing them in the same
+    release would break DA-001's deprecation path. So 3.0.0 is the deprecation release and the
+    next major, **planned as 4.0.0**, is the removal release.
+  - **Consequences (consensus), applied in the `result-core-package-split` commit:**
+    - every "removed in 3.0.0" / "until 3.0.0" / "3.0.0 makes V3 the default" text in code,
+      XML docs, `[Obsolete]` messages, the Web README, test comments and this epic → **4.0.0**;
+    - where "2.1.0" describes behavior shipping for the first time ("on by default in 2.1.0",
+      "default in 2.x"), it becomes 3.0.0; purely historical notes stay as they are;
+    - `CHANGELOG.md` `[Unreleased]` is reframed as "Planned as 3.0.0, a major release", with
+      BREAKING entries for the split and the principal and an "Upgrading from 2.x to 3.0.0"
+      section; still no version heading and no date until the user tags;
+    - `Error.HttpStatusCode` stays `[Obsolete]` when `Error` moves to `Limaj.Framework.Core`,
+      so consumers keep the migration message;
+    - Phase 8 is renamed "4.0.0" and also removes `IUserIdentityGateway`'s obsolete members
+      (`typed-user-principal` DA-006); "Cut the 2.1.0 tag" becomes "Cut the 3.0.0 tag".
+  - **Accepted cost:** the V3 default, `BusinessRule` and the removals wait for a second major.
+    Phase 8 could still join 3.0.0 before the tag if the user widens the scope; in that case the
+    identity obsolete members are removed in 3.0.0 too (all removals in the same major).
+
 ## Proposed structure by layer
 
 ```
 packages/
-  Limaj.Framework.Abstractions/src/Common/
+  Limaj.Framework.Core/src/                (moved from Abstractions/src/Common by result-core-package-split)
     Error.cs                          (RetryAfter init property — DA-007; HttpStatusCode [Obsolete] — DA-010;
-                                       3.0.0: HttpStatusCode removed)
-    Result.cs                         (3.0.0: BusinessRule factory — DA-009)
-    ErrorType (in Error.cs)           (3.0.0: BusinessRule = 8 — DA-009)
+                                       4.0.0: HttpStatusCode removed)
+    Result.cs                         (4.0.0: BusinessRule factory — DA-009)
+    ErrorType (in Error.cs)           (4.0.0: BusinessRule = 8 — DA-009)
   Limaj.Framework.Web/src/Http/
     IErrorHttpMapper.cs               (new — DA-002)
     DefaultErrorHttpMapper.cs         (new — public, one method per ErrorType, V2/V3 — DA-002/DA-003)
@@ -278,8 +310,8 @@ that touches `IResult` stay in `Web`.
 
 - **Characterization first, before any refactor:** lock the current v2 behavior of the static
   facades: status, `Content-Type`, `title`/`detail`, and concrete result type for the 7
-  `ErrorType`s, custom `HttpStatusCode`, and the 4 exception branches. Every 2.1.0 change must
-  leave these green, except the DA-005 fixes, which update their tests explicitly.
+  `ErrorType`s, custom `HttpStatusCode`, and the 4 exception branches. Every change of this
+  epic must leave these green, except the DA-005 fixes, which update their tests explicitly.
 - **Contract suite (from the session's experiment):** execute each `IResult` on a
   `DefaultHttpContext` with a real service provider, with and without `AddProblemDetails`. One
   theory per `ErrorType` × format (`V2`/`V3`) asserts:
@@ -303,14 +335,14 @@ that touches `IResult` stay in `Web`.
   goes through `IProblemDetailsService` with `V3`, and a custom `IProblemDetailsWriter`
   registered before `AddProblemDetails` replaces the format.
 
-## Implementation notes (2.1.0)
+## Implementation notes (3.0.0)
 
 Choices made where the decisions above left the mechanics open:
 
 - **Names:** the entry point is `IHttpResultResponder` (internal implementation
   `HttpResultResponder`, scoped). `DefaultErrorHttpMapper` has one virtual method per `ErrorType`
   plus a public `MapWithStatusCode(error, status)`. That method is the supported replacement for
-  `HttpStatusCode` (DA-010), and it stays in 3.0.0.
+  `HttpStatusCode` (DA-010), and it stays in 4.0.0.
 - **DA-010 mechanics:** `Error` became an explicit (non-positional) record. It keeps the 2.0
   five-parameter constructor and five-value `Deconstruct` with identical signatures, both
   `[Obsolete]`, plus the obsolete property. A new four-parameter constructor carries
@@ -334,7 +366,7 @@ Choices made where the decisions above left the mechanics open:
 
 ## Phase checklist
 
-### Phase 1 — Characterization (2.1.0)
+### Phase 1 — Characterization (3.0.0)
 - [x] Characterization tests for the static facades' current v2 behavior (status, Content-Type,
       title/detail, concrete type; 7 `ErrorType`s, custom `HttpStatusCode`, 4 exception branches)
 - [ ] Verify on an Azure Functions isolated host (ASP.NET Core integration) that
@@ -350,7 +382,7 @@ Choices made where the decisions above left the mechanics open:
     `AddLimajHttpErrorsTests` and `ExceptionDetailsOptionTests`, against a real service
     provider and `DefaultHttpContext`.
 
-### Phase 2 — Extension point (2.1.0, DA-002, DA-006)
+### Phase 2 — Extension point (3.0.0, DA-002, DA-006)
 - [x] `IErrorHttpMapper` + public `DefaultErrorHttpMapper` (one public method per `ErrorType`)
 - [x] Public built-in exception mapping (`IExceptionToErrorMapper`)
 - [x] Injected entry point (`ToHttpResult` + `RunAsync`), with the exception path going
@@ -359,60 +391,63 @@ Choices made where the decisions above left the mechanics open:
 - [x] Static facades delegate to the default mapping in `V2`, with characterization tests green
 - [x] Mapped-error log level by resulting status; stable `EventId`s via `LoggerMessage`
 
-### Phase 3 — Problem Details format selector (2.1.0, DA-003)
+### Phase 3 — Problem Details format selector (3.0.0, DA-003)
 - [x] `LimajProblemDetailsFormat { V2, V3 }`, default `V2`
 - [x] `V3`: `extensions.code` everywhere (incl. validation), 404/409 via `Results.Problem`,
       `detail = Message`, `title` by status
 - [x] Contract suite: `ErrorType` × format, with and without `AddProblemDetails`
 
-### Phase 4 — Exception details option (2.1.0, DA-004)
+### Phase 4 — Exception details option (3.0.0, DA-004)
 - [x] `bool? IncludeExceptionDetails` (`null` = current environment read, shared by facade and mapper)
 - [x] Fixed, data-free startup `Warning` when `true`
 - [x] Tests: 3 states, no stack-trace leak, startup warning
 
-### Phase 5 — `Error` additions (2.1.0, DA-007, DA-008, DA-010)
+### Phase 5 — `Error` additions (3.0.0, DA-007, DA-008, DA-010)
 - [x] `TimeSpan? RetryAfter` (`init`, outside the positional constructor) + `Retry-After` header
 - [x] `Details` outside Validation behind an opt-in; never on 5xx
 - [x] `[Obsolete]` on `Error.HttpStatusCode` without a binary break (validate the positional-record
       mechanics); `#pragma` where the framework still reads it
 
-### Phase 6 — Security fixes (2.1.0, DA-005)
+### Phase 6 — Security fixes (3.0.0, DA-005)
 - [x] Fixed code (`unexpected_error`) instead of `ex.Source` on the 500 body
 - [x] Generic message for `Result.Unexpected` outside Development + temporary
       `[Obsolete]` opt-out `ExposeUnexpectedResultMessage`
 - [x] `Validation` with `HttpStatusCode` keeps its `errors`
 - [x] Tests for the three fixes
 
-### Phase 7 — Documentation and release (2.1.0)
+### Phase 7 — Documentation and release (3.0.0)
 - [x] `packages/Limaj.Framework.Web/README.md`:
-  - [x] `AddLimajHttpErrors`, `IErrorHttpMapper` (incl. 422 by `Code` until 3.0.0)
+  - [x] `AddLimajHttpErrors`, `IErrorHttpMapper` (incl. 422 by `Code` until 4.0.0)
   - [x] `V2`/`V3`, and the `CustomizeProblemDetails` caveat under `V2`
   - [x] the `IProblemDetailsWriter` registration order
   - [x] the `OnRejected` recipe for the ASP.NET rate limiter
   - [x] the `IncludeExceptionDetails` guidance for Azure Functions
 - [x] `CHANGELOG.md`: "Added" (DA-002/003/004/006/007/008), "Deprecated" (DA-010),
       "Security" (DA-005), and a note on the new log levels
-- [ ] Cut the 2.1.0 tag (stable release procedure from `done/nuget-package-publishing-pipeline.md`)
+- [ ] Cut the 3.0.0 tag (stable release procedure from `done/nuget-package-publishing-pipeline.md`)
 
-### Phase 8 — 3.0.0 (major, DA-001)
+### Phase 8 — 4.0.0 (major, DA-001, DA-013)
 - [ ] Default format → `V3` (`V2` kept as the migration value)
 - [ ] `IncludeExceptionDetails` → `bool`, default `false`; remove every environment-name read
 - [ ] `ErrorType.BusinessRule = 8` + `Result.BusinessRule(...)` + 422 mapping; update the
       closed-set test to 8 values (intentional rule change, DA-009)
 - [ ] Remove `Error.HttpStatusCode` and its precedence branch in the default mapping
 - [ ] Remove the temporary `ExposeUnexpectedResultMessage` opt-out
+- [ ] Remove `IUserIdentityGateway`'s obsolete members (`GetCurrentUserIdAsync`,
+      `IsAuthenticatedAsync` — `typed-user-principal` DA-006, DA-013)
 - [ ] `CHANGELOG.md` migration notes:
   - [ ] format default, and how to pin `V2`
   - [ ] CS8509 on exhaustive switches
   - [ ] `HttpStatusCode` → `IErrorHttpMapper`/`BusinessRule`
   - [ ] `IncludeExceptionDetails` default
-- [ ] Cut the 3.0.0 tag
+  - [ ] `IUserIdentityGateway` obsolete members → `GetCurrentPrincipalAsync`
+- [ ] Cut the 4.0.0 tag
 
 ## Related
 
 - Supersedes in part DA-003 of `done/test-foundation-and-persistence-error-fixes.md`
-  (`ErrorType` closed at 7 → 8 in 3.0.0; `HttpStatusCode` escape hatch deprecated).
+  (`ErrorType` closed at 7 → 8 in 4.0.0; `HttpStatusCode` escape hatch deprecated in 3.0.0).
 - Extends DA-004 of `done/rename-functions-to-web.md` (generic 500 message) to the `Result`
   path.
-- Separate follow-ups from the same consumer request: `backlog/result-core-package-split.md`
+- Separate follow-ups from the same consumer request: `done/result-core-package-split.md`
   (A3) and `backlog/typed-user-principal.md` (A4).

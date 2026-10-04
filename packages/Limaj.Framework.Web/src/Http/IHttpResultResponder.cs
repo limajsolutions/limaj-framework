@@ -1,4 +1,4 @@
-using Limaj.Framework.Abstractions.Common;
+using Limaj.Framework.Core;
 using Microsoft.AspNetCore.Http;
 
 namespace Limaj.Framework.Web.Http;

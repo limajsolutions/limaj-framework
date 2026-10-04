@@ -1,6 +1,6 @@
 using System.Net;
-using Limaj.Framework.Abstractions.Common;
-using Limaj.Framework.Abstractions.Errors;
+using Limaj.Framework.Core;
+using Limaj.Framework.Core.Errors;
 using Limaj.Framework.Web.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;

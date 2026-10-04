@@ -12,7 +12,8 @@ starting-point `.claude/settings.json` + `CLAUDE.md` for a new project come from
 
 ## Repository structure
 
-- `packages/Limaj.Framework.Abstractions`: contracts, common types, and base errors.
+- `packages/Limaj.Framework.Core`: the dependency-free result/error contract (`Result`/`Error`, the framework exceptions, `IExceptionToErrorMapper`).
+- `packages/Limaj.Framework.Abstractions`: pure contracts (`BaseEntity`, repository/unit-of-work, identity gateway).
 - `packages/Limaj.Framework.Application`: application layer decoupled from concrete infrastructure.
 - `packages/Limaj.Framework.Persistence.EFCore`: EF Core adapters implementing the abstraction contracts.
 - `packages/Limaj.Framework.Web`: generic HTTP pipeline, host-agnostic (Azure Functions isolated worker or Minimal API — both speak `HttpRequest`/`IResult`).
@@ -216,10 +217,10 @@ gh repo create "$PRODUCT" --private --source=. --push
 
 Allowed dependency direction (must not be broken):
 
-1. `Abstractions` → no internal dependencies.
-2. `Application` → `Abstractions` only.
-3. `Persistence.EFCore` → `Abstractions`.
-4. `Web` (or `Api`) → `Abstractions` + web/functions stack.
+1. `Core` and `Abstractions` → no internal dependencies (siblings; any package may reference `Core`).
+2. `Application` → `Abstractions` + `Core` only.
+3. `Persistence.EFCore` → `Abstractions` (+ `Core`).
+4. `Web` (or `Api`) → `Core` (+ `Abstractions`) + web/functions stack.
 
 `Application` never references concrete persistence, host identity, or
 infrastructure. If a concrete implementation is needed, define the contract in
@@ -237,7 +238,7 @@ dotnet build Limaj.Framework.sln
 
 ## Publishing the packages (`Limaj.Framework.*`)
 
-The 4 packages (`Abstractions`, `Application`, `Persistence.EFCore`, `Web`) are published in
+The 5 packages (`Core`, `Abstractions`, `Application`, `Persistence.EFCore`, `Web`) are published in
 lockstep (same version, one tag per release) via
 [`.github/workflows/publish-packages.yml`](.github/workflows/publish-packages.yml) to two
 feeds:
@@ -336,6 +337,7 @@ project references `Limaj.Framework.Application`, not `Limaj.Framework.Web`):
 
 ```bash
 # product's application/domain project
+dotnet add package Limaj.Framework.Core --version 1.2.0
 dotnet add package Limaj.Framework.Abstractions --version 1.2.0
 dotnet add package Limaj.Framework.Application --version 1.2.0
 
@@ -352,14 +354,18 @@ Direct equivalent in `.csproj`, if you prefer editing manually instead of `dotne
 
 ```xml
 <ItemGroup>
+  <PackageReference Include="Limaj.Framework.Core" Version="1.2.0" />
   <PackageReference Include="Limaj.Framework.Abstractions" Version="1.2.0" />
   <PackageReference Include="Limaj.Framework.Application" Version="1.2.0" />
 </ItemGroup>
 ```
 
-Since the 4 packages ship in lockstep (DA-002), always reference **the same version
+Since the 5 packages ship in lockstep (DA-002), always reference **the same version
 number** across every project of the product that consumes `Limaj.Framework.*` — there is
 no supported scenario today for mixing different versions between them.
+`Limaj.Framework.Core` was split out of `Abstractions` in 3.0.0 and starts at that version
+(there is no 1.x/2.x `Core`); see "Upgrading from 2.x to 3.0.0" in
+[`CHANGELOG.md`](CHANGELOG.md).
 
 ### Incident: bad version published
 
@@ -369,7 +375,7 @@ no supported scenario today for mixing different versions between them.
    - **nuget.org** (stable only) — versions **cannot be deleted**. On the package page →
      **Manage** → **Listing**, unlist the version (hides it from search and from new
      installs without an explicit version), and under **Deprecation** mark it as having
-     critical bugs, pointing to the fixed version. Repeat for the 4 packages.
+     critical bugs, pointing to the fixed version. Repeat for the 5 packages.
    - **GitHub Packages** — the package's page at
      `https://github.com/limajsolutions?tab=packages` → the specific version → **Delete
      version** (requires admin permission on the package).

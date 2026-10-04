@@ -1,6 +1,6 @@
 using System.Net;
-using Limaj.Framework.Abstractions.Common;
-using Limaj.Framework.Abstractions.Errors;
+using Limaj.Framework.Core;
+using Limaj.Framework.Core.Errors;
 using Limaj.Framework.Web.Http;
 using Limaj.Framework.Web.Tests.TestSupport;
 using Microsoft.AspNetCore.Http;
@@ -15,7 +15,7 @@ namespace Limaj.Framework.Web.Tests;
 /// Characterization of the static facades' v2 output (ResultExtensions.ToHttpResult,
 /// RequestRunner.RunAsync / ExceptionExtensions.ToHttpResult), executed on a real
 /// HttpContext without AddProblemDetails: concrete IResult type, status, Content-Type and
-/// title/detail. Locked before the 2.1.0 refactor (web-error-extensibility, Phase 1); only the
+/// title/detail. Locked before the web-error-extensibility refactor (Phase 1); only the
 /// DA-005 security fixes are allowed to change it, and those cases say so explicitly
 /// ("DA-005:" below: previous rule in the comment, new rule in the assertion).
 /// </summary>

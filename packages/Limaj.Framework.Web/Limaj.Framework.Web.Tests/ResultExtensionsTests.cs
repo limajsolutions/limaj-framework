@@ -1,5 +1,5 @@
 using System.Net;
-using Limaj.Framework.Abstractions.Common;
+using Limaj.Framework.Core;
 using Limaj.Framework.Web.Http;
 using Microsoft.AspNetCore.Http;
 using Xunit;

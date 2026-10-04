@@ -1,5 +1,5 @@
 using System.Net;
-using Limaj.Framework.Abstractions.Common;
+using Limaj.Framework.Core;
 using Limaj.Framework.Web.Http;
 using Limaj.Framework.Web.Tests.TestSupport;
 using Microsoft.AspNetCore.Http;
@@ -9,7 +9,7 @@ using Xunit;
 namespace Limaj.Framework.Web.Tests;
 
 /// <summary>
-/// DA-005 security fixes, on by default in 2.1.0: no ex.Source on the 500 body, the generic
+/// DA-005 security fixes, on by default in 3.0.0: no ex.Source on the 500 body, the generic
 /// message for a 5xx Result.Unexpected outside Development (with the temporary opt-out), and
 /// Validation errors kept when an explicit status is set.
 /// </summary>

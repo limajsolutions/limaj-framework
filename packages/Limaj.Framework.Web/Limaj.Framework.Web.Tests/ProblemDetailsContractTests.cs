@@ -1,4 +1,4 @@
-using Limaj.Framework.Abstractions.Common;
+using Limaj.Framework.Core;
 using Limaj.Framework.Web.Http;
 using Limaj.Framework.Web.Tests.TestSupport;
 using Microsoft.AspNetCore.Http;
@@ -106,7 +106,7 @@ public class ProblemDetailsContractTests
     public async Task V3_MapWithStatusCode_WritesTheCustomStatusInTheSameContract()
     {
         // The supported replacement for Error.HttpStatusCode (DA-010): a product mapper keyed
-        // on Error.Code answering, e.g., 422 for a business rule violation. Until 3.0.0 adds
+        // on Error.Code answering, e.g., 422 for a business rule violation. Until 4.0.0 adds
         // ErrorType.BusinessRule (DA-009) such an error has no type of its own, so Type stays
         // at its default and the mapper keys on the code.
         var mapper = new DefaultErrorHttpMapper(new LimajHttpErrorOptions { Format = LimajProblemDetailsFormat.V3 }, () => false);

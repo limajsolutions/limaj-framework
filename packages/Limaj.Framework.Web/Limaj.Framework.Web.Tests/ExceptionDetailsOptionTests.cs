@@ -1,4 +1,4 @@
-using Limaj.Framework.Abstractions.Common;
+using Limaj.Framework.Core;
 using Limaj.Framework.Web.Http;
 using Limaj.Framework.Web.Tests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;

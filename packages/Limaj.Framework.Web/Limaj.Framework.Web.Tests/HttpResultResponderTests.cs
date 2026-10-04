@@ -1,5 +1,5 @@
-using Limaj.Framework.Abstractions.Common;
-using Limaj.Framework.Abstractions.Errors;
+using Limaj.Framework.Core;
+using Limaj.Framework.Core.Errors;
 using Limaj.Framework.Web.Http;
 using Limaj.Framework.Web.Tests.TestSupport;
 using Microsoft.AspNetCore.Http;
@@ -125,7 +125,7 @@ public class HttpResultResponderTests
     public async Task RunAsync_HostMappedError_ClassifiesByTheDeprecatedExplicitStatusWhenSet()
     {
         // TooManyRequests alone resolves to 429 (Warning); only the explicit 503 makes it a 5xx.
-#pragma warning disable CS0618 // The deprecated escape hatch still drives the resulting status in 2.x.
+#pragma warning disable CS0618 // The deprecated escape hatch still drives the resulting status in 3.x.
         var serviceUnavailable = new Error("server_at_capacity", "The server is at capacity. Try again later.", ErrorType.TooManyRequests, null, System.Net.HttpStatusCode.ServiceUnavailable);
 #pragma warning restore CS0618
         var responder = CreateResponder(new CatchAllExceptionMapper(serviceUnavailable));

@@ -1,4 +1,4 @@
-using Limaj.Framework.Abstractions.Common;
+using Limaj.Framework.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
@@ -45,7 +45,7 @@ public class DefaultErrorHttpMapper : IErrorHttpMapper
     {
         ArgumentNullException.ThrowIfNull(error);
 
-#pragma warning disable CS0618 // Error.HttpStatusCode is deprecated (DA-010) but still honored in 2.x.
+#pragma warning disable CS0618 // Error.HttpStatusCode is deprecated (DA-010) but still honored in 3.x.
         if (error.HttpStatusCode is { } explicitStatusCode)
         {
             return MapWithStatusCode(error, (int)explicitStatusCode);
@@ -102,7 +102,7 @@ public class DefaultErrorHttpMapper : IErrorHttpMapper
     /// <summary>The status the default mapping gives <paramref name="error"/>.</summary>
     internal static int ResolveStatusCode(Error error)
     {
-#pragma warning disable CS0618 // Error.HttpStatusCode is deprecated (DA-010) but still honored in 2.x.
+#pragma warning disable CS0618 // Error.HttpStatusCode is deprecated (DA-010) but still honored in 3.x.
         if (error.HttpStatusCode is { } explicitStatusCode)
         {
             return (int)explicitStatusCode;
@@ -215,7 +215,7 @@ public class DefaultErrorHttpMapper : IErrorHttpMapper
 
     /// <summary>
     /// DA-005: an Unexpected error that ends up as a 5xx sends the generic message unless the
-    /// options expose it (IncludeExceptionDetails, or the temporary 2.x opt-out).
+    /// options expose it (IncludeExceptionDetails, or the temporary 3.x opt-out).
     /// </summary>
     private string GetClientMessage(Error error, int statusCode)
     {
@@ -227,7 +227,7 @@ public class DefaultErrorHttpMapper : IErrorHttpMapper
 
     private bool ExposesUnexpectedMessages()
     {
-#pragma warning disable CS0618 // Temporary DA-005 opt-out, removed in 3.0.0.
+#pragma warning disable CS0618 // Temporary DA-005 opt-out, removed in 4.0.0.
         if (Options.ExposeUnexpectedResultMessage)
         {
             return true;

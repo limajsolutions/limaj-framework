@@ -1,6 +1,6 @@
 name: Publish packages
 
-# Publica os 4 pacotes Limaj.Framework.* em dois feeds:
+# Publica os 5 pacotes Limaj.Framework.* em dois feeds:
 #   - GitHub Packages -> toda versao (pre-releases da main + releases estaveis); exige auth para ler.
 #   - nuget.org       -> somente releases estaveis (tag vX.Y.Z); publico, sem auth para ler.
 #     Login via Trusted Publishing (OIDC -> API key de ~1h, sem segredo de push guardado),

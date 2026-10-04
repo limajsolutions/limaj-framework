@@ -1,5 +1,5 @@
-using Limaj.Framework.Abstractions.Common;
-using Limaj.Framework.Abstractions.Errors;
+using Limaj.Framework.Core;
+using Limaj.Framework.Core.Errors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

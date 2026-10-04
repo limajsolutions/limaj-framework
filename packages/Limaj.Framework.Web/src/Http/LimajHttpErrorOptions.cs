@@ -32,7 +32,7 @@ public sealed class LimajHttpErrorOptions
     /// Temporary opt-out of the DA-005 fix: when <c>true</c>, a 5xx <c>ErrorType.Unexpected</c>
     /// result sends its own message to the client in every environment, as in 2.0.
     /// </summary>
-    [Obsolete("Temporary opt-out of the 2.1.0 security fix (DA-005), removed in 3.0.0. Use an ErrorType other than Unexpected for a message meant for the client.")]
+    [Obsolete("Temporary opt-out of the 3.0.0 security fix (DA-005), removed in 4.0.0. Use an ErrorType other than Unexpected for a message meant for the client.")]
     public bool ExposeUnexpectedResultMessage { get; set; }
 
     internal bool ResolveIncludeExceptionDetails(Func<bool> isDevelopmentEnvironment) =>

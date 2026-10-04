@@ -1,7 +1,7 @@
 using System.Net;
 using System.Runtime.CompilerServices;
 
-namespace Limaj.Framework.Abstractions.Common;
+namespace Limaj.Framework.Core;
 
 public enum ErrorType
 {
@@ -28,7 +28,7 @@ public enum ErrorType
 public sealed record Error
 {
     internal const string HttpStatusCodeObsoleteMessage =
-        "Error.HttpStatusCode is a transport concept and is removed in 3.0.0. Resolve statuses outside the ErrorType mapping in the host's IErrorHttpMapper (Limaj.Framework.Web), keyed on Error.Code.";
+        "Error.HttpStatusCode is a transport concept and is removed in 4.0.0. Resolve statuses outside the ErrorType mapping in the host's IErrorHttpMapper (Limaj.Framework.Web), keyed on Error.Code.";
 
     [OverloadResolutionPriority(1)]
     public Error(
@@ -65,7 +65,7 @@ public sealed record Error
 
     /// <summary>
     /// Deprecated escape hatch for a status not covered by <see cref="ErrorType"/>. When set,
-    /// it still takes precedence over the ErrorType -> status mapping in 2.x.
+    /// it still takes precedence over the ErrorType -> status mapping in 3.x.
     /// </summary>
     [Obsolete(HttpStatusCodeObsoleteMessage)]
     public HttpStatusCode? HttpStatusCode { get; init; }

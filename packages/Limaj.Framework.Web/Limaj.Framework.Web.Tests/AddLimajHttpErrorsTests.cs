@@ -1,6 +1,6 @@
 using System.Text.Json;
-using Limaj.Framework.Abstractions.Common;
-using Limaj.Framework.Abstractions.Errors;
+using Limaj.Framework.Core;
+using Limaj.Framework.Core.Errors;
 using Limaj.Framework.Web.Http;
 using Limaj.Framework.Web.Tests.TestSupport;
 using Microsoft.AspNetCore.Http;
@@ -139,7 +139,7 @@ public class AddLimajHttpErrorsTests
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
     }
 
-    // A business rule violation (valid input, a rule forbids it). Until 3.0.0 adds
+    // A business rule violation (valid input, a rule forbids it). Until 4.0.0 adds
     // ErrorType.BusinessRule (DA-009) it has no type of its own, so Type stays at its default
     // and the host's mapper answers 422 keyed on the code.
     private static readonly Error OrderAlreadyShipped = new("order_already_shipped", "The order has already shipped.");

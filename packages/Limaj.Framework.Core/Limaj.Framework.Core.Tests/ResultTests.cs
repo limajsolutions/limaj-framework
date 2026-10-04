@@ -1,7 +1,7 @@
-using Limaj.Framework.Abstractions.Common;
+using Limaj.Framework.Core;
 using Xunit;
 
-namespace Limaj.Framework.Abstractions.Tests;
+namespace Limaj.Framework.Core.Tests;
 
 public class ResultOfTTests
 {
