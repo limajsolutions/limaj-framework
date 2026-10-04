@@ -429,7 +429,7 @@ Choices made where the decisions above left the mechanics open:
   - [x] the `IncludeExceptionDetails` guidance for Azure Functions
 - [x] `CHANGELOG.md`: "Added" (DA-002/003/004/006/007/008), "Deprecated" (DA-010),
       "Security" (DA-005), and a note on the new log levels
-- [ ] Cut the 3.0.0 tag (stable release procedure from `done/nuget-package-publishing-pipeline.md`)
+- [x] Cut the 3.0.0 tag (stable release procedure from `done/nuget-package-publishing-pipeline.md`)
 
 ### Phase 8 — 4.0.0 (major, DA-001, DA-013)
 - [ ] Default format → `V3` (`V2` kept as the migration value)

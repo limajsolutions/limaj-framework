@@ -7,10 +7,11 @@ version. The `[2026-06-06]` section predates versioning and keeps its date headi
 
 ## [Unreleased]
 
-Planned as 3.0.0, a major release (epics `web-error-extensibility`, `result-core-package-split`,
-`typed-user-principal`; `web-error-extensibility` DA-013). 2.1.0 is never released: its changes ship here. There is no
-`v3.0.0` tag yet, so these notes carry no version heading and no release date. The BREAKING
-entries below need source changes; read "Upgrading from 2.x to 3.0.0" first. The rest is
+## [3.0.0] - 2026-10-04
+
+A major release (epics `web-error-extensibility`, `result-core-package-split`,
+`typed-user-principal`; `web-error-extensibility` DA-013). 2.1.0 is never released: its
+changes ship here. The BREAKING entries below need source changes; read "Upgrading from 2.x to 3.0.0" first. The rest is
 additive or opt-in, except the "Security" fixes, which ship on by default as an explicit
 exception (DA-005). Everything marked `[Obsolete]` here is removed in the next major, planned
 as 4.0.0.
