@@ -1,6 +1,6 @@
 # Web error extensibility — extension point, Problem Details format and error contract (2.1.0 → 3.0.0)
 
-**Status:** Backlog — not business-approved (that is the user's decision)
+**Status:** In progress — not business-approved (that is the user's decision)
 **Última revisão:** 2026-10-04
 
 ## Context
@@ -235,6 +235,19 @@ action pending approval). The framework only has to make these possible through 
     `backlog/result-core-package-split.md`.
   - **A4, typed user principal:** tracked in `backlog/typed-user-principal.md`.
 
+- **DA-012 — Release sequencing: 2.1.0 ships before 3.0.0.** *(consensus — `/flow` run of
+  2026-10-04)*
+  - **Scope of the run:** Phases 1–7 (2.1.0) only. Phase 8 (3.0.0) is a later run, after
+    2.1.0 is merged and tagged.
+  - **Why:** DA-001's deprecation path (`[Obsolete]` in a minor, removal in the next major)
+    only holds if 2.1.0 actually reaches consumers. One pull request carrying both would add
+    and remove `HttpStatusCode` and `ExposeUnexpectedResultMessage` in the same merge, and a
+    2.1.0 tag could only go on an intermediate commit (lost on a squash merge). 3.0.0 is also
+    the natural window for `result-core-package-split`, which still needs mediation.
+  - **Tags are the user's:** an implementation run never tags. "Cut the 2.1.0 tag" stays
+    `- [ ]` until the user cuts it after the merge, so this epic stays in `in-progress/`.
+  - **`CHANGELOG.md`:** the 2.1.0 entry does not claim a release date before the tag exists.
+
 ## Proposed structure by layer
 
 ```
@@ -290,56 +303,94 @@ that touches `IResult` stay in `Web`.
   goes through `IProblemDetailsService` with `V3`, and a custom `IProblemDetailsWriter`
   registered before `AddProblemDetails` replaces the format.
 
+## Implementation notes (2.1.0)
+
+Choices made where the decisions above left the mechanics open:
+
+- **Names:** the entry point is `IHttpResultResponder` (internal implementation
+  `HttpResultResponder`, scoped). `DefaultErrorHttpMapper` has one virtual method per `ErrorType`
+  plus a public `MapWithStatusCode(error, status)`. That method is the supported replacement for
+  `HttpStatusCode` (DA-010), and it stays in 3.0.0.
+- **DA-010 mechanics:** `Error` became an explicit (non-positional) record. It keeps the 2.0
+  five-parameter constructor and five-value `Deconstruct` with identical signatures, both
+  `[Obsolete]`, plus the obsolete property. A new four-parameter constructor carries
+  `[OverloadResolutionPriority(1)]`, so `new Error(code, message)` binds to it without a
+  warning or an ambiguity. `new Error(..., HttpStatusCode: x)` binds to the obsolete one and
+  warns. `ErrorTests.HttpStatusCode_IsObsolete_WithoutBinaryBreak` locks this in.
+- **DA-006 order override:** the responder runs `BuiltInExceptionToErrorMapper` (resolved from
+  DI) before the host's `IExceptionToErrorMapper`. A host that wants another order registers a
+  subclass of `BuiltInExceptionToErrorMapper` in its place (README recipe), so no composite
+  class is needed.
+- **DA-005 scope of the generic message:** it applies to `ErrorType.Unexpected` only when the
+  resolved status is ≥ 500. An `Unexpected` error with an explicit 4xx `HttpStatusCode` (the
+  2.0 README's own 402 example) keeps its message. "Outside Development" is the same resolution
+  as `IncludeExceptionDetails` (`null` → `ASPNETCORE_ENVIRONMENT`).
+- **Retry-After:** applied by wrapping the result in a public `RetryAfterHttpResult` (it exposes
+  `InnerResult` and `StatusCode`), only when `RetryAfter > 0`. Every other error keeps its 2.0
+  concrete type. Under `V3` the body field is `retryAfter`, in seconds.
+- **DA-008 body field:** opted-in `Details` go out as the `details` extension, in both formats.
+- **Startup warning:** an `IHostedService` registered by `AddLimajHttpErrors` (EventId 1000).
+  The ids 4000–4003 are 4xx events and 5000–5001 are 5xx events.
+
 ## Phase checklist
 
 ### Phase 1 — Characterization (2.1.0)
-- [ ] Characterization tests for the static facades' current v2 behavior (status, Content-Type,
+- [x] Characterization tests for the static facades' current v2 behavior (status, Content-Type,
       title/detail, concrete type; 7 `ErrorType`s, custom `HttpStatusCode`, 4 exception branches)
 - [ ] Verify on an Azure Functions isolated host (ASP.NET Core integration) that
       `HttpContext.RequestServices`, `AddProblemDetails`/`IProblemDetailsService` and
       `IOptions` validation behave as on Minimal API; record the result in this epic
+  - **Result (2026-10-04 run): not verified.** This repository has no Azure Functions project,
+    and the machine has no Azure Functions Core Tools (`func`) to run an isolated host. The
+    item stays open until someone runs it in a Functions app. What to check there: an endpoint
+    that injects `IHttpResultResponder`; `AddProblemDetails` adding `traceId` under `V3`; the
+    `ExceptionDetailsStartupWarning` hosted service logging when `IncludeExceptionDetails = true`;
+    and `AddLimajHttpErrors(o => o.Format = (LimajProblemDetailsFormat)42)` failing on the
+    first `IOptions<LimajHttpErrorOptions>.Value`. On Minimal API these are covered by
+    `AddLimajHttpErrorsTests` and `ExceptionDetailsOptionTests`, against a real service
+    provider and `DefaultHttpContext`.
 
 ### Phase 2 — Extension point (2.1.0, DA-002, DA-006)
-- [ ] `IErrorHttpMapper` + public `DefaultErrorHttpMapper` (one public method per `ErrorType`)
-- [ ] Public built-in exception mapping (`IExceptionToErrorMapper`)
-- [ ] Injected entry point (`ToHttpResult` + `RunAsync`), with the exception path going
+- [x] `IErrorHttpMapper` + public `DefaultErrorHttpMapper` (one public method per `ErrorType`)
+- [x] Public built-in exception mapping (`IExceptionToErrorMapper`)
+- [x] Injected entry point (`ToHttpResult` + `RunAsync`), with the exception path going
       through the same `IErrorHttpMapper`
-- [ ] `LimajHttpErrorOptions` + `AddLimajHttpErrors(...)` (no `IProblemDetailsWriter` registration)
-- [ ] Static facades delegate to the default mapping in `V2`, with characterization tests green
-- [ ] Mapped-error log level by resulting status; stable `EventId`s via `LoggerMessage`
+- [x] `LimajHttpErrorOptions` + `AddLimajHttpErrors(...)` (no `IProblemDetailsWriter` registration)
+- [x] Static facades delegate to the default mapping in `V2`, with characterization tests green
+- [x] Mapped-error log level by resulting status; stable `EventId`s via `LoggerMessage`
 
 ### Phase 3 — Problem Details format selector (2.1.0, DA-003)
-- [ ] `LimajProblemDetailsFormat { V2, V3 }`, default `V2`
-- [ ] `V3`: `extensions.code` everywhere (incl. validation), 404/409 via `Results.Problem`,
+- [x] `LimajProblemDetailsFormat { V2, V3 }`, default `V2`
+- [x] `V3`: `extensions.code` everywhere (incl. validation), 404/409 via `Results.Problem`,
       `detail = Message`, `title` by status
-- [ ] Contract suite: `ErrorType` × format, with and without `AddProblemDetails`
+- [x] Contract suite: `ErrorType` × format, with and without `AddProblemDetails`
 
 ### Phase 4 — Exception details option (2.1.0, DA-004)
-- [ ] `bool? IncludeExceptionDetails` (`null` = current environment read, shared by facade and mapper)
-- [ ] Fixed, data-free startup `Warning` when `true`
-- [ ] Tests: 3 states, no stack-trace leak, startup warning
+- [x] `bool? IncludeExceptionDetails` (`null` = current environment read, shared by facade and mapper)
+- [x] Fixed, data-free startup `Warning` when `true`
+- [x] Tests: 3 states, no stack-trace leak, startup warning
 
 ### Phase 5 — `Error` additions (2.1.0, DA-007, DA-008, DA-010)
-- [ ] `TimeSpan? RetryAfter` (`init`, outside the positional constructor) + `Retry-After` header
-- [ ] `Details` outside Validation behind an opt-in; never on 5xx
-- [ ] `[Obsolete]` on `Error.HttpStatusCode` without a binary break (validate the positional-record
+- [x] `TimeSpan? RetryAfter` (`init`, outside the positional constructor) + `Retry-After` header
+- [x] `Details` outside Validation behind an opt-in; never on 5xx
+- [x] `[Obsolete]` on `Error.HttpStatusCode` without a binary break (validate the positional-record
       mechanics); `#pragma` where the framework still reads it
 
 ### Phase 6 — Security fixes (2.1.0, DA-005)
-- [ ] Fixed code (`unexpected_error`) instead of `ex.Source` on the 500 body
-- [ ] Generic message for `Result.Unexpected` outside Development + temporary
+- [x] Fixed code (`unexpected_error`) instead of `ex.Source` on the 500 body
+- [x] Generic message for `Result.Unexpected` outside Development + temporary
       `[Obsolete]` opt-out `ExposeUnexpectedResultMessage`
-- [ ] `Validation` with `HttpStatusCode` keeps its `errors`
-- [ ] Tests for the three fixes
+- [x] `Validation` with `HttpStatusCode` keeps its `errors`
+- [x] Tests for the three fixes
 
 ### Phase 7 — Documentation and release (2.1.0)
-- [ ] `packages/Limaj.Framework.Web/README.md`:
-  - [ ] `AddLimajHttpErrors`, `IErrorHttpMapper` (incl. 422 by `Code` until 3.0.0)
-  - [ ] `V2`/`V3`, and the `CustomizeProblemDetails` caveat under `V2`
-  - [ ] the `IProblemDetailsWriter` registration order
-  - [ ] the `OnRejected` recipe for the ASP.NET rate limiter
-  - [ ] the `IncludeExceptionDetails` guidance for Azure Functions
-- [ ] `CHANGELOG.md`: "Added" (DA-002/003/004/006/007/008), "Deprecated" (DA-010),
+- [x] `packages/Limaj.Framework.Web/README.md`:
+  - [x] `AddLimajHttpErrors`, `IErrorHttpMapper` (incl. 422 by `Code` until 3.0.0)
+  - [x] `V2`/`V3`, and the `CustomizeProblemDetails` caveat under `V2`
+  - [x] the `IProblemDetailsWriter` registration order
+  - [x] the `OnRejected` recipe for the ASP.NET rate limiter
+  - [x] the `IncludeExceptionDetails` guidance for Azure Functions
+- [x] `CHANGELOG.md`: "Added" (DA-002/003/004/006/007/008), "Deprecated" (DA-010),
       "Security" (DA-005), and a note on the new log levels
 - [ ] Cut the 2.1.0 tag (stable release procedure from `done/nuget-package-publishing-pipeline.md`)
 

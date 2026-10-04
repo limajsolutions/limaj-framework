@@ -68,7 +68,9 @@ public class ResultExtensionsTests
     {
         // DA-003: a host's IExceptionToErrorMapper can set Error.HttpStatusCode to respond with a
         // status the closed 7-value ErrorType enum doesn't cover.
+#pragma warning disable CS0618 // Exercises the deprecated HttpStatusCode escape hatch (DA-010).
         var error = new Error("plan_limit_exceeded", "Plan limit exceeded.", ErrorType.Unexpected, HttpStatusCode: HttpStatusCode.PaymentRequired);
+#pragma warning restore CS0618
         var result = Result<object>.Fail(error);
 
         var httpResult = result.ToHttpResult(value => Results.Ok(value));
