@@ -1,6 +1,6 @@
 using System.Net;
-using Limaj.Framework.Abstractions.Common;
-using Limaj.Framework.Abstractions.Errors;
+using Limaj.Framework.Core;
+using Limaj.Framework.Core.Errors;
 using Limaj.Framework.Web.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -77,8 +77,10 @@ public class ExceptionBridgeTests
     public async Task RunAsync_UnknownException_MapperRecognizesIt_UsesMappedErrorStatusCode()
     {
         var mapper = new Mock<IExceptionToErrorMapper>();
+#pragma warning disable CS0618 // Exercises the deprecated HttpStatusCode escape hatch (DA-010).
         mapper.Setup(m => m.Map(It.IsAny<InvalidOperationException>()))
             .Returns(new Error("plan_limit_exceeded", "Plan limit exceeded.", ErrorType.Unexpected, HttpStatusCode: HttpStatusCode.PaymentRequired));
+#pragma warning restore CS0618
 
         var result = await RequestRunner.RunAsync(
             () => throw new InvalidOperationException("boom"),

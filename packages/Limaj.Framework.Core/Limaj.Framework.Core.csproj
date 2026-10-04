@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <Compile Remove="Limaj.Framework.Abstractions.Tests\**\*.cs" />
-    <None Remove="Limaj.Framework.Abstractions.Tests\**\*.cs" />
+    <Compile Remove="Limaj.Framework.Core.Tests\**\*.cs" />
+    <None Remove="Limaj.Framework.Core.Tests\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MinVer" Version="8.0.0">
@@ -13,8 +13,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackageId>Limaj.Framework.Abstractions</PackageId>
-    <Description>Pure contracts and types for Limaj Framework: BaseEntity with soft delete, repository/unit-of-work abstractions, and the identity gateway with its typed, extensible user principal. No dependencies.</Description>
+    <PackageId>Limaj.Framework.Core</PackageId>
+    <Description>Result/Error flow for Limaj Framework: Result/Result&lt;T&gt;, Error/ErrorType, framework exceptions and the IExceptionToErrorMapper extension point. Dependency-free result/error contract only; any other type needs a DA.</Description>
     <MinVerTagPrefix>v</MinVerTagPrefix>
   </PropertyGroup>
 </Project>

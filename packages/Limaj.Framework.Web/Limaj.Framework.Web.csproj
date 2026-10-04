@@ -4,10 +4,13 @@
     <None Remove="Limaj.Framework.Web.Tests\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Limaj.Framework.Abstractions\Limaj.Framework.Abstractions.csproj" />
+    <ProjectReference Include="..\Limaj.Framework.Core\Limaj.Framework.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Limaj.Framework.Web.Tests" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MinVer" Version="8.0.0">

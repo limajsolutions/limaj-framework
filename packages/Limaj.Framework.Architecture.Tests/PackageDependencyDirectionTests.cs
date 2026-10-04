@@ -1,6 +1,8 @@
 using System.Reflection;
-using Limaj.Framework.Abstractions.Common;
+using System.Xml.Linq;
+using Limaj.Framework.Abstractions.Domain;
 using Limaj.Framework.Application.Services;
+using Limaj.Framework.Core;
 using Limaj.Framework.Persistence.EFCore.Repositories.Base;
 using Limaj.Framework.Web.Http;
 using NetArchTest.Rules;
@@ -9,36 +11,80 @@ using Xunit;
 namespace Limaj.Framework.Architecture.Tests;
 
 /// <summary>
-/// DA-005: asserts the dependency direction table in CLAUDE.md by reflection, so a future
-/// dynamic-typing/reflection-based workaround that the project-reference build check wouldn't
-/// catch still fails a test. Abstractions depends on nothing; Application, Persistence.EFCore
-/// and Web may each depend only on Abstractions (plus their own declared external deps),
-/// never on one another.
+/// DA-005 (test-foundation) and DA-004 (result-core-package-split): asserts the dependency
+/// direction table in CLAUDE.md by reflection, so a future dynamic-typing/reflection-based
+/// workaround that the project-reference build check wouldn't catch still fails a test. Core
+/// and Abstractions are sibling bottom layers that depend on nothing; Application,
+/// Persistence.EFCore and Web may each depend only on Core and Abstractions (plus their own
+/// declared external deps), never on one another.
 /// </summary>
 public class PackageDependencyDirectionTests
 {
-    private static readonly Assembly AbstractionsAssembly = typeof(Result).Assembly;
+    private static readonly Assembly CoreAssembly = typeof(Result).Assembly;
+    private static readonly Assembly AbstractionsAssembly = typeof(BaseEntity).Assembly;
     private static readonly Assembly ApplicationAssembly = typeof(BaseService<>).Assembly;
     private static readonly Assembly PersistenceEfCoreAssembly = typeof(BaseRepository<,>).Assembly;
     private static readonly Assembly WebAssembly = typeof(RequestRunner).Assembly;
 
+    private const string ClaimsNamespace = "System.Security.Claims";
+    private const string AspNetCoreNamespace = "Microsoft.AspNetCore";
+
     [Fact]
-    public void Abstractions_DoesNotDependOnAnyOtherFrameworkPackage()
+    public void Core_DoesNotDependOnAnyOtherFrameworkPackage()
     {
         AssertNoDependencyOn(
-            AbstractionsAssembly,
+            CoreAssembly,
+            AbstractionsAssembly.GetName().Name!,
             ApplicationAssembly.GetName().Name!,
             PersistenceEfCoreAssembly.GetName().Name!,
             WebAssembly.GetName().Name!);
     }
 
     [Fact]
-    public void Application_OnlyDependsOnAbstractions_AmongFrameworkPackages()
+    public void Abstractions_DoesNotDependOnAnyOtherFrameworkPackage()
+    {
+        AssertNoDependencyOn(
+            AbstractionsAssembly,
+            CoreAssembly.GetName().Name!,
+            ApplicationAssembly.GetName().Name!,
+            PersistenceEfCoreAssembly.GetName().Name!,
+            WebAssembly.GetName().Name!);
+    }
+
+    [Fact]
+    public void Application_OnlyDependsOnAbstractionsAndCore_AmongFrameworkPackages()
     {
         AssertNoDependencyOn(
             ApplicationAssembly,
             PersistenceEfCoreAssembly.GetName().Name!,
             WebAssembly.GetName().Name!);
+    }
+
+    /// <summary>
+    /// Application references Core even though it uses no Core type today, so a product that
+    /// references only Limaj.Framework.Application still reaches <see cref="Result"/> (DA-004).
+    /// Read from the .csproj: the compiler drops a reference to an assembly whose types are
+    /// unused, so Application's metadata cannot show it.
+    /// </summary>
+    [Fact]
+    public void Application_ProjectReferencesExactlyAbstractionsAndCore()
+    {
+        var applicationProjectFile = Path.Combine(
+            FindRepositoryRoot(),
+            "packages",
+            "Limaj.Framework.Application",
+            "Limaj.Framework.Application.csproj");
+
+        var referencedFrameworkProjects = XDocument.Load(applicationProjectFile)
+            .Descendants("ProjectReference")
+            .Select(reference => Path.GetFileNameWithoutExtension(
+                reference.Attribute("Include")!.Value.Replace('\\', Path.DirectorySeparatorChar)))
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(
+            [AbstractionsAssembly.GetName().Name!, CoreAssembly.GetName().Name!],
+            referencedFrameworkProjects);
     }
 
     [Fact]
@@ -59,6 +105,23 @@ public class PackageDependencyDirectionTests
             PersistenceEfCoreAssembly.GetName().Name!);
     }
 
+    /// <summary>
+    /// typed-user-principal DA-002: the identity contracts (and the Application code built on
+    /// them) never expose claims or ASP.NET Core types; mapping a host identity to a principal
+    /// is the product host's job.
+    /// </summary>
+    [Fact]
+    public void Abstractions_DoesNotDependOnClaimsOrAspNetCore()
+    {
+        AssertNoDependencyOn(AbstractionsAssembly, ClaimsNamespace, AspNetCoreNamespace);
+    }
+
+    [Fact]
+    public void Application_DoesNotDependOnClaimsOrAspNetCore()
+    {
+        AssertNoDependencyOn(ApplicationAssembly, ClaimsNamespace, AspNetCoreNamespace);
+    }
+
     private static void AssertNoDependencyOn(Assembly assembly, params string[] forbiddenDependencies)
     {
         var result = Types.InAssembly(assembly)
@@ -68,5 +131,19 @@ public class PackageDependencyDirectionTests
 
         var offendingTypes = result.FailingTypes?.Select(type => type.FullName) ?? [];
         Assert.True(result.IsSuccessful, $"Forbidden dependency found in: {string.Join(", ", offendingTypes)}");
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "Limaj.Framework.sln")))
+            {
+                return directory.FullName;
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"Limaj.Framework.sln not found above {AppContext.BaseDirectory}.");
     }
 }

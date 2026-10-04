@@ -1,4 +1,4 @@
-namespace Limaj.Framework.Abstractions.Errors;
+namespace Limaj.Framework.Core.Errors;
 
 public class NotFoundException : Exception
 {

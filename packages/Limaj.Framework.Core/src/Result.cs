@@ -1,4 +1,4 @@
-namespace Limaj.Framework.Abstractions.Common;
+namespace Limaj.Framework.Core;
 
 public sealed class Result<T>
 {

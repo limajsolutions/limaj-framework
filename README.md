@@ -12,7 +12,8 @@ starting-point `.claude/settings.json` + `CLAUDE.md` for a new project come from
 
 ## Repository structure
 
-- `packages/Limaj.Framework.Abstractions`: contracts, common types, and base errors.
+- `packages/Limaj.Framework.Core`: the dependency-free result/error contract (`Result`/`Error`, the framework exceptions, `IExceptionToErrorMapper`).
+- `packages/Limaj.Framework.Abstractions`: pure contracts (`BaseEntity`, repository/unit-of-work, identity gateway).
 - `packages/Limaj.Framework.Application`: application layer decoupled from concrete infrastructure.
 - `packages/Limaj.Framework.Persistence.EFCore`: EF Core adapters implementing the abstraction contracts.
 - `packages/Limaj.Framework.Web`: generic HTTP pipeline, host-agnostic (Azure Functions isolated worker or Minimal API — both speak `HttpRequest`/`IResult`).
@@ -150,7 +151,7 @@ The kit's `CLAUDE.md` is deliberately stack-agnostic. Open it and:
 - fill in every `{preencher}` placeholder (project purpose, code conventions);
 - in the last section ("Stack e camadas específicas do projeto"), paste the limaj-framework
   stack content the embedded comment asks for. What this repo can supply today is the
-  package layering table and the `IUserIdentityGateway` rule from this repo's
+  package layering table and the `IUserIdentityGateway` / `IUserIdentityGateway<TPrincipal>` rule from this repo's
   [`CLAUDE.md`](CLAUDE.md) ("Architecture: package layering", "Core patterns to reuse") —
   the security (ownership/BOLA) and migrations (`dotnet ef database update`) guidance the
   comment mentions is not documented in this repo, so write it in the product;
@@ -216,14 +217,20 @@ gh repo create "$PRODUCT" --private --source=. --push
 
 Allowed dependency direction (must not be broken):
 
-1. `Abstractions` → no internal dependencies.
-2. `Application` → `Abstractions` only.
-3. `Persistence.EFCore` → `Abstractions`.
-4. `Web` (or `Api`) → `Abstractions` + web/functions stack.
+1. `Core` and `Abstractions` → no internal dependencies (siblings; any package may reference `Core`).
+2. `Application` → `Abstractions` + `Core` only.
+3. `Persistence.EFCore` → `Abstractions` (+ `Core`).
+4. `Web` (or `Api`) → `Core` (+ `Abstractions`) + web/functions stack.
 
 `Application` never references concrete persistence, host identity, or
 infrastructure. If a concrete implementation is needed, define the contract in
 `Abstractions` and put the adapter in the infrastructure layer.
+
+`Application` depends on `IUserIdentityGateway` / `IUserIdentityGateway<TPrincipal>`, never on
+`HttpContext` / `ClaimsPrincipal`. The product's host maps its identity provider's claims to a
+`UserPrincipal` (or a principal derived from it); the framework ships no host adapter. See the
+[Web README](packages/Limaj.Framework.Web/README.md#identity-mapping-the-hosts-user-to-a-principal)
+for the recipe and the privacy rules (`UserId` is personal data).
 
 Building blocks to reuse (not reinvent): `Result`/`Error` for the return flow,
 persistence contracts for the services, and the generic HTTP pipeline (`RequestRunner`)
@@ -237,7 +244,7 @@ dotnet build Limaj.Framework.sln
 
 ## Publishing the packages (`Limaj.Framework.*`)
 
-The 4 packages (`Abstractions`, `Application`, `Persistence.EFCore`, `Web`) are published in
+The 5 packages (`Core`, `Abstractions`, `Application`, `Persistence.EFCore`, `Web`) are published in
 lockstep (same version, one tag per release) via
 [`.github/workflows/publish-packages.yml`](.github/workflows/publish-packages.yml) to two
 feeds:
@@ -280,13 +287,13 @@ There's no automation or mandatory checklist for deciding "when" to cut a tag �
 it's up to whoever is cutting it (DA-006). The mechanism:
 
 ```bash
-git tag -a v1.2.0 -m "Release v1.2.0"
-git push origin v1.2.0
+git tag -a v3.0.0 -m "Release v3.0.0"
+git push origin v3.0.0
 ```
 
 Pushing the tag (`vX.Y.Z` pattern) triggers the same pipeline; since MinVer resolves the
-version exactly at the tag, the package comes out without a pre-release suffix (`1.2.0`,
-not `1.2.0-alpha...`). It goes to both feeds — the nuget.org job waits for the `nuget`
+version exactly at the tag, the package comes out without a pre-release suffix (`3.0.0`,
+not `3.0.0-alpha...`). It goes to both feeds — the nuget.org job waits for the `nuget`
 environment approval if a required reviewer is configured. nuget.org takes from a few
 minutes up to about an hour to validate and index a new version.
 
@@ -318,11 +325,11 @@ minutes up to about an hour to validate and index a new version.
 The consumption model is **pinned version, deliberate upgrade** (DA-003) — no floating
 range or auto-update. Two version options to reference:
 
-- **Stable** (`X.Y.Z`, e.g. `1.2.0`) — only exists once someone cuts the corresponding
+- **Stable** (`X.Y.Z`, e.g. `3.0.0`) — only exists once someone cuts the corresponding
   tag (see "Stable release" above). This is what a production product should use. See the
   published versions at `https://www.nuget.org/packages/Limaj.Framework.Abstractions`.
 - **Pre-release** (`X.Y.Z-alpha.0.<height>+sha.<commit>`, e.g.
-  `1.2.0-alpha.0.4+sha.a1b2c3d`) — published on every push to `main`; only useful for
+  `3.0.1-alpha.0.4+sha.a1b2c3d`) — published on every push to `main`; only useful for
   testing a recent change before a stable tag exists, never for production. See the
   available versions under the **Packages** tab of this repository at
   `https://github.com/limajsolutions/limaj-framework/packages`.
@@ -336,14 +343,15 @@ project references `Limaj.Framework.Application`, not `Limaj.Framework.Web`):
 
 ```bash
 # product's application/domain project
-dotnet add package Limaj.Framework.Abstractions --version 1.2.0
-dotnet add package Limaj.Framework.Application --version 1.2.0
+dotnet add package Limaj.Framework.Core --version 3.0.0
+dotnet add package Limaj.Framework.Abstractions --version 3.0.0
+dotnet add package Limaj.Framework.Application --version 3.0.0
 
 # product's persistence (EF Core) project
-dotnet add package Limaj.Framework.Persistence.EFCore --version 1.2.0
+dotnet add package Limaj.Framework.Persistence.EFCore --version 3.0.0
 
 # product's HTTP host project (Azure Functions isolated worker or Minimal API)
-dotnet add package Limaj.Framework.Web --version 1.2.0
+dotnet add package Limaj.Framework.Web --version 3.0.0
 ```
 
 For a pre-release, add `--source limaj-framework` (the source name configured in step 1).
@@ -352,14 +360,18 @@ Direct equivalent in `.csproj`, if you prefer editing manually instead of `dotne
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="Limaj.Framework.Abstractions" Version="1.2.0" />
-  <PackageReference Include="Limaj.Framework.Application" Version="1.2.0" />
+  <PackageReference Include="Limaj.Framework.Core" Version="3.0.0" />
+  <PackageReference Include="Limaj.Framework.Abstractions" Version="3.0.0" />
+  <PackageReference Include="Limaj.Framework.Application" Version="3.0.0" />
 </ItemGroup>
 ```
 
-Since the 4 packages ship in lockstep (DA-002), always reference **the same version
+Since the 5 packages ship in lockstep (DA-002), always reference **the same version
 number** across every project of the product that consumes `Limaj.Framework.*` — there is
 no supported scenario today for mixing different versions between them.
+`Limaj.Framework.Core` was split out of `Abstractions` in 3.0.0 and starts at that version
+(there is no 1.x/2.x `Core`); see "Upgrading from 2.x to 3.0.0" in
+[`CHANGELOG.md`](CHANGELOG.md).
 
 ### Incident: bad version published
 
@@ -369,7 +381,7 @@ no supported scenario today for mixing different versions between them.
    - **nuget.org** (stable only) — versions **cannot be deleted**. On the package page →
      **Manage** → **Listing**, unlist the version (hides it from search and from new
      installs without an explicit version), and under **Deprecation** mark it as having
-     critical bugs, pointing to the fixed version. Repeat for the 4 packages.
+     critical bugs, pointing to the fixed version. Repeat for the 5 packages.
    - **GitHub Packages** — the package's page at
      `https://github.com/limajsolutions?tab=packages` → the specific version → **Delete
      version** (requires admin permission on the package).

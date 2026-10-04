@@ -1,6 +1,6 @@
 <Project>
   <!--
-    Package metadata shared by the 4 Limaj.Framework.* packages (each .csproj sets its own
+    Package metadata shared by the 5 Limaj.Framework.* packages (each .csproj sets its own
     Description). Test projects also import this file but stay IsPackable=false.
     Published to nuget.org (stable tags) and GitHub Packages (pre-releases) by
     .github/workflows/publish-packages.yml.

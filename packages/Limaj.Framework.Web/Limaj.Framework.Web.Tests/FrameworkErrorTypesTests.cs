@@ -1,4 +1,4 @@
-using Limaj.Framework.Abstractions.Errors;
+using Limaj.Framework.Core.Errors;
 using Limaj.Framework.Web.Http;
 using Xunit;
 
@@ -20,7 +20,7 @@ public class FrameworkErrorTypesTests
     ];
 
     [Fact]
-    public void AbstractionsAssembly_DefinesOnlyTheDocumentedClosedSetOfExceptionTypes()
+    public void CoreAssembly_DefinesOnlyTheDocumentedClosedSetOfExceptionTypes()
     {
         AssertOnlyKnownExceptionTypes(typeof(IExceptionToErrorMapper).Assembly);
     }

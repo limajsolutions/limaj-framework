@@ -23,6 +23,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Limaj.Framework.Web.Tests",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Limaj.Framework.Architecture.Tests", "packages\Limaj.Framework.Architecture.Tests\Limaj.Framework.Architecture.Tests.csproj", "{3CEECB74-4294-4E99-B918-5C11FDFDF8DA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Limaj.Framework.Core", "packages\Limaj.Framework.Core\Limaj.Framework.Core.csproj", "{ED719245-495B-4551-9054-6BB54A5EB899}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Limaj.Framework.Core.Tests", "packages\Limaj.Framework.Core\Limaj.Framework.Core.Tests\Limaj.Framework.Core.Tests.csproj", "{E4EF590E-9ECB-4E23-9A24-9E48512838F3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -141,6 +145,30 @@ Global
 		{3CEECB74-4294-4E99-B918-5C11FDFDF8DA}.Release|x64.Build.0 = Release|Any CPU
 		{3CEECB74-4294-4E99-B918-5C11FDFDF8DA}.Release|x86.ActiveCfg = Release|Any CPU
 		{3CEECB74-4294-4E99-B918-5C11FDFDF8DA}.Release|x86.Build.0 = Release|Any CPU
+		{ED719245-495B-4551-9054-6BB54A5EB899}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED719245-495B-4551-9054-6BB54A5EB899}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED719245-495B-4551-9054-6BB54A5EB899}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{ED719245-495B-4551-9054-6BB54A5EB899}.Debug|x64.Build.0 = Debug|Any CPU
+		{ED719245-495B-4551-9054-6BB54A5EB899}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{ED719245-495B-4551-9054-6BB54A5EB899}.Debug|x86.Build.0 = Debug|Any CPU
+		{ED719245-495B-4551-9054-6BB54A5EB899}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED719245-495B-4551-9054-6BB54A5EB899}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED719245-495B-4551-9054-6BB54A5EB899}.Release|x64.ActiveCfg = Release|Any CPU
+		{ED719245-495B-4551-9054-6BB54A5EB899}.Release|x64.Build.0 = Release|Any CPU
+		{ED719245-495B-4551-9054-6BB54A5EB899}.Release|x86.ActiveCfg = Release|Any CPU
+		{ED719245-495B-4551-9054-6BB54A5EB899}.Release|x86.Build.0 = Release|Any CPU
+		{E4EF590E-9ECB-4E23-9A24-9E48512838F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E4EF590E-9ECB-4E23-9A24-9E48512838F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E4EF590E-9ECB-4E23-9A24-9E48512838F3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E4EF590E-9ECB-4E23-9A24-9E48512838F3}.Debug|x64.Build.0 = Debug|Any CPU
+		{E4EF590E-9ECB-4E23-9A24-9E48512838F3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E4EF590E-9ECB-4E23-9A24-9E48512838F3}.Debug|x86.Build.0 = Debug|Any CPU
+		{E4EF590E-9ECB-4E23-9A24-9E48512838F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E4EF590E-9ECB-4E23-9A24-9E48512838F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E4EF590E-9ECB-4E23-9A24-9E48512838F3}.Release|x64.ActiveCfg = Release|Any CPU
+		{E4EF590E-9ECB-4E23-9A24-9E48512838F3}.Release|x64.Build.0 = Release|Any CPU
+		{E4EF590E-9ECB-4E23-9A24-9E48512838F3}.Release|x86.ActiveCfg = Release|Any CPU
+		{E4EF590E-9ECB-4E23-9A24-9E48512838F3}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -155,5 +183,7 @@ Global
 		{D72B096F-0B4A-4079-B0AF-667290D440BA} = {970B2E05-CCD0-4A9B-972E-3970EEDB1E9F}
 		{2E0B7CF4-1F1D-48F8-9EA6-47156E761B18} = {970B2E05-CCD0-4A9B-972E-3970EEDB1E9F}
 		{3CEECB74-4294-4E99-B918-5C11FDFDF8DA} = {970B2E05-CCD0-4A9B-972E-3970EEDB1E9F}
+		{ED719245-495B-4551-9054-6BB54A5EB899} = {970B2E05-CCD0-4A9B-972E-3970EEDB1E9F}
+		{E4EF590E-9ECB-4E23-9A24-9E48512838F3} = {970B2E05-CCD0-4A9B-972E-3970EEDB1E9F}
 	EndGlobalSection
 EndGlobal
