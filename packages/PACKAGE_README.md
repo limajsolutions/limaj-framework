@@ -5,7 +5,7 @@ Reusable, domain-agnostic building blocks for .NET 10 / Azure Functions SaaS bac
 | Package | Purpose | Depends on |
 |---|---|---|
 | `Limaj.Framework.Core` | The dependency-free result/error contract: `Result`/`Error`, framework exceptions, `IExceptionToErrorMapper` | — |
-| `Limaj.Framework.Abstractions` | Pure contracts and types: `BaseEntity`, repository/unit of work, identity gateway | — |
+| `Limaj.Framework.Abstractions` | Pure contracts and types: `BaseEntity`, repository/unit of work, identity gateway with a typed, extensible user principal | — |
 | `Limaj.Framework.Application` | Application-layer base services built on the abstractions | `Abstractions` + `Core` |
 | `Limaj.Framework.Persistence.EFCore` | EF Core base repository (soft delete), unit of work, base entity configuration, UTC/retry helpers | `Abstractions` + EF Core |
 | `Limaj.Framework.Web` | HTTP mapping of `Result` → status codes, `RequestRunner` exception bridge | `Core` + ASP.NET Core |

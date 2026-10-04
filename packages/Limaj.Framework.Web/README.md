@@ -191,3 +191,97 @@ below every 5xx event id.
 
 The status is resolved from the `Error`: its type, or the deprecated `HttpStatusCode` when
 set. A host `IErrorHttpMapper` that answers another status does not change the log level.
+
+## Identity: mapping the host's user to a principal
+
+Application code reads the caller through `IUserIdentityGateway` (or
+`IUserIdentityGateway<TPrincipal>`) from `Limaj.Framework.Abstractions.Identity`, never through
+`HttpContext` or `ClaimsPrincipal`. The framework ships **no** host adapter: which claim is the
+user id (`sub`, `oid`, `NameIdentifier`, Easy Auth headers…) is your identity provider's
+decision, and a wrong default would be a security and privacy bug. The product's host
+implements the gateway. The recipe below is illustrative; adapt the claim names to your
+provider.
+
+```csharp
+// Product code: a principal with what the product needs, and nothing more.
+public sealed class AcmePrincipal(string? userId, string tenantId) : UserPrincipal(userId)
+{
+    public string TenantId { get; } = tenantId;
+}
+
+// Product host: ClaimsPrincipal → principal. Claims types stay in the host.
+public sealed class HttpUserIdentityGateway(IHttpContextAccessor httpContextAccessor)
+    : IUserIdentityGateway<AcmePrincipal>
+{
+    public Task<AcmePrincipal?> GetCurrentPrincipalAsync(CancellationToken cancellationToken = default)
+    {
+        ClaimsPrincipal? user = httpContextAccessor.HttpContext?.User;
+        if (user?.Identity?.IsAuthenticated != true)
+        {
+            return Task.FromResult<AcmePrincipal?>(null); // null = no authenticated caller
+        }
+
+        // Your provider's opaque, stable id: "sub" (OIDC; set JwtBearerOptions.MapInboundClaims = false
+        // to keep the name), "oid" (Entra ID)... Absent for a client-credentials caller, which yields
+        // an authenticated non-user principal (UserId == null).
+        var userId = user.FindFirst("sub")?.Value;
+        var tenantId = user.FindFirst("tid")?.Value;
+        if (tenantId is null)
+        {
+            return Task.FromResult<AcmePrincipal?>(null); // fail closed on an incomplete identity
+        }
+
+        return Task.FromResult<AcmePrincipal?>(new AcmePrincipal(userId, tenantId));
+    }
+}
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<HttpUserIdentityGateway>();
+builder.Services.AddScoped<IUserIdentityGateway<AcmePrincipal>>(sp => sp.GetRequiredService<HttpUserIdentityGateway>());
+builder.Services.AddScoped<IUserIdentityGateway>(sp => sp.GetRequiredService<HttpUserIdentityGateway>());
+```
+
+In Application code, take one snapshot per operation:
+
+```csharp
+var principal = await identity.GetCurrentPrincipalAsync(cancellationToken);
+if (principal is null)
+{
+    return Result<Order>.Unauthorized();
+}
+
+if (!principal.HasUserId || order.OwnerId != principal.UserId)
+{
+    throw new NotFoundException("Order", order.Id); // no user id in the message
+}
+```
+
+`GetCurrentPrincipalAsync` returns `null` exactly when there is no authenticated caller. A
+non-null principal with `UserId == null` is an authenticated **non-user** caller
+(service-to-service, client credentials), so ownership checks against `UserId` fail closed.
+For background jobs with no request, your gateway decides what to return (for example a
+non-user principal); the framework has no first-class "system" caller yet.
+
+### Privacy
+
+- `UserId` is the identity provider's opaque, stable identifier, never an e-mail or a name. It
+  is pseudonymous data, which is still personal data (LGPD art. 5 I and art. 13 §4; GDPR
+  Recital 26).
+- Carry the minimum (LGPD art. 6 III; GDPR art. 5(1)(c)): prefer identifiers to personal data,
+  and add e-mail, name or roles to a derived principal only when the product needs them.
+- `UserPrincipal.ToString()` is sealed and returns `{TypeName} { [redacted] }`, so `$"{principal}"`
+  and log placeholders leak nothing, in derived principals too. Structured-log destructuring
+  (`{@Principal}`) and JSON serialization **bypass** `ToString`: never destructure or serialize
+  a principal into logs, and never return it raw from an endpoint. Logging a user id is always
+  an explicit choice, and logs that carry user ids fall under data-subject requests and your
+  retention policy.
+- Register the gateway as scoped (per request) and never cache a principal in a singleton.
+- A cross-user access answers `NotFoundException` (404) with no user id in the message, so it
+  reveals neither the resource's existence nor whose it is.
+- The framework never logs a principal, nor puts it or its `UserId` into an `Error`,
+  `Error.Details`, an exception message or a log event; its Forbidden/Unauthorized errors do
+  not echo the id.
+
+`GetCurrentUserIdAsync` and `IsAuthenticatedAsync` are `[Obsolete]` default members, derived
+from `GetCurrentPrincipalAsync`, and are removed in 4.0.0. Do not implement them: a class's
+own implementation silently replaces the default.

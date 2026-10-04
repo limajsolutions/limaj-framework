@@ -7,8 +7,8 @@ version. The `[2026-06-06]` section predates versioning and keeps its date headi
 
 ## [Unreleased]
 
-Planned as 3.0.0, a major release (epics `web-error-extensibility`, `result-core-package-split`;
-`web-error-extensibility` DA-013). 2.1.0 is never released: its changes ship here. There is no
+Planned as 3.0.0, a major release (epics `web-error-extensibility`, `result-core-package-split`,
+`typed-user-principal`; `web-error-extensibility` DA-013). 2.1.0 is never released: its changes ship here. There is no
 `v3.0.0` tag yet, so these notes carry no version heading and no release date. The BREAKING
 entries below need source changes; read "Upgrading from 2.x to 3.0.0" first. The rest is
 additive or opt-in, except the "Security" fixes, which ship on by default as an explicit
@@ -33,6 +33,11 @@ as 4.0.0.
   `Limaj.Framework.Abstractions.Domain`, `.Contracts` and `.Identity` keep their names.
 - **No wire change:** response bodies, `Error.Code` values and HTTP statuses are the same as
   2.x for the same configuration.
+- **`IUserIdentityGateway` implementers:** implement `GetCurrentPrincipalAsync` (or
+  `IUserIdentityGateway<TPrincipal>`) and **delete your own `GetCurrentUserIdAsync` /
+  `IsAuthenticatedAsync` implementations** — they would silently override the new delegating
+  defaults, with no compiler warning. Move callers to the `GetCurrentPrincipalAsync` snapshot
+  (see the BREAKING entry below).
 
 ### Changed
 - **BREAKING — the result core moved to the new `Limaj.Framework.Core` package**
@@ -45,6 +50,26 @@ as 4.0.0.
   `IUnitOfWork` and `IUserIdentityGateway` and no longer contains the result types. Package
   references: `Application` → `Abstractions` + `Core`; `Persistence.EFCore` → `Abstractions`;
   `Web` → `Core` only.
+- **BREAKING — `IUserIdentityGateway` returns a typed, extensible principal**
+  (`typed-user-principal`, DA-001…DA-007; `Limaj.Framework.Abstractions.Identity`).
+  - New abstract member `Task<UserPrincipal?> GetCurrentPrincipalAsync(CancellationToken = default)`:
+    one snapshot of the caller, so the user id and the authenticated state can no longer
+    disagree. `null` = no authenticated caller; a non-null principal = authenticated, with
+    `UserId == null` for a non-user caller (service-to-service, client credentials). Every
+    implementer must implement it.
+  - New `UserPrincipal` base class, which products extend (e.g. with a `TenantId`): validating
+    constructor (`ArgumentException` for an empty/whitespace id, without echoing it), get-only
+    `UserId` (the identity provider's opaque, stable id — personal data), `HasUserId`, and a
+    sealed, redacting `ToString()` (`{TypeName} { [redacted] }`).
+  - New `IUserIdentityGateway<TPrincipal> : IUserIdentityGateway` returning the product's
+    principal; it serves the non-generic member with the same instance.
+  - No host adapter ships: map your identity provider's claims to a principal in your host
+    (recipe and privacy rules in the Web README). No identity contract exposes
+    `System.Security.Claims` or ASP.NET Core types.
+  - **Migration:** implement `GetCurrentPrincipalAsync` (or the generic interface); **delete
+    your own `GetCurrentUserIdAsync` / `IsAuthenticatedAsync` implementations**, which would
+    silently override the delegating defaults with no compiler warning; move callers to the
+    snapshot (`principal is null` / `principal.UserId`).
 - **Log levels and EventIds of the exception bridge** (DA-006). An exception mapped by the host's `IExceptionToErrorMapper` is now logged by its resulting status: 5xx at `Error` (EventId 5000), 4xx at `Warning` (4003). It used to be `Warning` regardless, so **new error-level alerts may fire**. Every event now has a stable `EventId` via `LoggerMessage` (table in the Web README). The unhandled-exception log now also carries `ex.Source`.
 
 ### Added
@@ -59,6 +84,7 @@ as 4.0.0.
 ### Deprecated
 - **`Error.HttpStatusCode`** (DA-010): `[Obsolete]`, removed in 4.0.0. Map statuses outside the `ErrorType` table in your `IErrorHttpMapper`, keyed on `Error.Code` (`MapWithStatusCode`). `Error` is now an explicit record that keeps the 2.0 five-parameter constructor and five-value `Deconstruct` with the same signatures (both `[Obsolete]`), so code that sets `HttpStatusCode` still compiles, with a warning. `[OverloadResolutionPriority]` keeps calls without `HttpStatusCode` on the new four-parameter constructor.
 - **`LimajHttpErrorOptions.ExposeUnexpectedResultMessage`**: born `[Obsolete]` as the temporary opt-out of the fix below, removed in 4.0.0.
+- **`IUserIdentityGateway.GetCurrentUserIdAsync` and `IsAuthenticatedAsync`** (`typed-user-principal` DA-006): `[Obsolete]` default interface members, removed in 4.0.0. They now derive from `GetCurrentPrincipalAsync` (`principal?.UserId`, `principal is not null`), so callers keep compiling with a warning; use `GetCurrentPrincipalAsync()` instead.
 
 ### Security
 - **The 500 for an unhandled exception no longer sends `ex.Source`** (DA-005, CWE-209). Its `detail` (V2) / `code` (V3) is now the fixed `unexpected_error`. `ex.Source` stays in the log.

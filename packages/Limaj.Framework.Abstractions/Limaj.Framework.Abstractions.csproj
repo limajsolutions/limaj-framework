@@ -14,7 +14,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>Limaj.Framework.Abstractions</PackageId>
-    <Description>Pure contracts and types for Limaj Framework: BaseEntity with soft delete, repository/unit-of-work and identity gateway abstractions. No dependencies.</Description>
+    <Description>Pure contracts and types for Limaj Framework: BaseEntity with soft delete, repository/unit-of-work abstractions, and the identity gateway with its typed, extensible user principal. No dependencies.</Description>
     <MinVerTagPrefix>v</MinVerTagPrefix>
   </PropertyGroup>
 </Project>

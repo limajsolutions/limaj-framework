@@ -26,6 +26,9 @@ public class PackageDependencyDirectionTests
     private static readonly Assembly PersistenceEfCoreAssembly = typeof(BaseRepository<,>).Assembly;
     private static readonly Assembly WebAssembly = typeof(RequestRunner).Assembly;
 
+    private const string ClaimsNamespace = "System.Security.Claims";
+    private const string AspNetCoreNamespace = "Microsoft.AspNetCore";
+
     [Fact]
     public void Core_DoesNotDependOnAnyOtherFrameworkPackage()
     {
@@ -100,6 +103,23 @@ public class PackageDependencyDirectionTests
             WebAssembly,
             ApplicationAssembly.GetName().Name!,
             PersistenceEfCoreAssembly.GetName().Name!);
+    }
+
+    /// <summary>
+    /// typed-user-principal DA-002: the identity contracts (and the Application code built on
+    /// them) never expose claims or ASP.NET Core types; mapping a host identity to a principal
+    /// is the product host's job.
+    /// </summary>
+    [Fact]
+    public void Abstractions_DoesNotDependOnClaimsOrAspNetCore()
+    {
+        AssertNoDependencyOn(AbstractionsAssembly, ClaimsNamespace, AspNetCoreNamespace);
+    }
+
+    [Fact]
+    public void Application_DoesNotDependOnClaimsOrAspNetCore()
+    {
+        AssertNoDependencyOn(ApplicationAssembly, ClaimsNamespace, AspNetCoreNamespace);
     }
 
     private static void AssertNoDependencyOn(Assembly assembly, params string[] forbiddenDependencies)

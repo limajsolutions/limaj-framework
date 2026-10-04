@@ -151,7 +151,7 @@ The kit's `CLAUDE.md` is deliberately stack-agnostic. Open it and:
 - fill in every `{preencher}` placeholder (project purpose, code conventions);
 - in the last section ("Stack e camadas específicas do projeto"), paste the limaj-framework
   stack content the embedded comment asks for. What this repo can supply today is the
-  package layering table and the `IUserIdentityGateway` rule from this repo's
+  package layering table and the `IUserIdentityGateway` / `IUserIdentityGateway<TPrincipal>` rule from this repo's
   [`CLAUDE.md`](CLAUDE.md) ("Architecture: package layering", "Core patterns to reuse") —
   the security (ownership/BOLA) and migrations (`dotnet ef database update`) guidance the
   comment mentions is not documented in this repo, so write it in the product;
@@ -225,6 +225,12 @@ Allowed dependency direction (must not be broken):
 `Application` never references concrete persistence, host identity, or
 infrastructure. If a concrete implementation is needed, define the contract in
 `Abstractions` and put the adapter in the infrastructure layer.
+
+`Application` depends on `IUserIdentityGateway` / `IUserIdentityGateway<TPrincipal>`, never on
+`HttpContext` / `ClaimsPrincipal`. The product's host maps its identity provider's claims to a
+`UserPrincipal` (or a principal derived from it); the framework ships no host adapter. See the
+[Web README](packages/Limaj.Framework.Web/README.md#identity-mapping-the-hosts-user-to-a-principal)
+for the recipe and the privacy rules (`UserId` is personal data).
 
 Building blocks to reuse (not reinvent): `Result`/`Error` for the return flow,
 persistence contracts for the services, and the generic HTTP pipeline (`RequestRunner`)

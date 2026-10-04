@@ -238,7 +238,7 @@ action pending approval). The framework only has to make these possible through 
     publication, and success responses.
   - **A3, splitting the result core into its own package:** tracked in
     `done/result-core-package-split.md`.
-  - **A4, typed user principal:** tracked in `backlog/typed-user-principal.md`.
+  - **A4, typed user principal:** tracked in `done/typed-user-principal.md`.
 
 - **DA-012 — Release sequencing: 2.1.0 ships before 3.0.0.** *(consensus — `/flow` run of
   2026-10-04)* — **Superseded by DA-013** (kept as history).
@@ -450,4 +450,4 @@ Choices made where the decisions above left the mechanics open:
 - Extends DA-004 of `done/rename-functions-to-web.md` (generic 500 message) to the `Result`
   path.
 - Separate follow-ups from the same consumer request: `done/result-core-package-split.md`
-  (A3) and `backlog/typed-user-principal.md` (A4).
+  (A3) and `done/typed-user-principal.md` (A4).
